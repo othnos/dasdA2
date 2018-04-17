@@ -8,6 +8,8 @@ import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jdk.nashorn.internal.parser.JSONParser;
+import netscape.javascript.JSObject;
 
 import javax.print.attribute.IntegerSyntax;
 import java.util.*;
@@ -17,12 +19,19 @@ public class ConveyorAgent extends Agent {
     private boolean palletStatus;
     private boolean hasWorkStation;
     private int conveyorStatus;
+    private JSObject route;
+    private Integer name;
 
     protected void setup(){
         neighbours = new ArrayList<Integer>();
         palletStatus = false;
         hasWorkStation = false;
         conveyorStatus = 0;
+        name = 0;
+    }
+
+    public void setName(int name_){
+        name = name_;
     }
 
      public void addNeighbour(int number){
@@ -53,5 +62,11 @@ public class ConveyorAgent extends Agent {
         conveyorStatus = status;
     }
 
+    public void setJSONobject(JSObject route_){
+        route = route_;
+    }
 
+    public void addToJSON(){
+
+    }
 }
