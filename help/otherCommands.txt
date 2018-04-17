@@ -1,0 +1,34 @@
+JAVA and MAS
+
+JAVA IDE
+Please download and install IntelliJ
+https://www.jetbrains.com/idea/
+This is a paid product, but you can get a student license for free.
+Select student license and use your university email to register.
+JDK should be installed as well, but very likely you already had installed it.
+
+Basics of JAVA
+Follow this tutorial to learn the basics of JAVA. Important!
+https://www.youtube.com/watch?v=WPvGqX-TXP0
+
+Code samples
+(Jade)PingAgent: Receive message, ACLMessages, Cyclic behaviour
+(Jade)Behaviours/TimeAgent: Scheduling behaviours: Ticker (cycle), Waker (delay)
+(Jade) thanksAgent: Conversation between agents
+
+
+Useful libraries:
+JSON manipulation http://www.java2s.com/Code/Jar/j/Downloadjsonsimple111jar.htm
+
+Command line
+**Navigate to folder
+cd C:\Users\Administrator\Documents\JADE\JADE-examples-4.5.0\jade
+
+**Compile java files
+javac -classpath lib\jade.jar -d classes src\examples\dasdConv\*.java
+
+**Starting JADE and initializing an agent
+java -cp lib\jade.jar;classes jade.Boot -gui john:examples.ParseAgent
+
+**Starting JADE, adding json library and initializing an agent
+java -cp lib\jade.jar;lib\json-simple-1.1.1.jar;classes jade.Boot -gui john:examples.ParseAgent

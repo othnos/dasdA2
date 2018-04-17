@@ -1,0 +1,3 @@
+Suoritetaan projektihakemiston juuressa
+
+java -cp lib\jade.jar;lib\json-simple-1.1.1.jar;classes jade.Boot -gui john:examples.PingAgent

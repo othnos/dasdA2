@@ -1,0 +1,30 @@
+{
+  "source": 1,
+  "destination": 8,
+  "paths": [
+    {
+      "runtime": 25,
+      "isValid": true,
+      "path": [
+        {"cnv": 2},
+        {"cnv": 4, "workingEst": 15},
+        {"cnv": 6}
+      ]
+    },
+    {
+      "runtime": 5,
+      "isValid": false,
+      "path": [
+        {"cnv": 2}
+      ]
+    },
+    {
+      "runtime": 10,
+      "isValid": false,
+      "path": [
+        {"cnv": 2},
+        {"cnv": 4, "workingEst": 15}
+      ]
+    }
+  ]
+}

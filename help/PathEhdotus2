@@ -1,0 +1,13 @@
+{
+  "source": 1,
+  "destination": 8,
+  "paths": [
+    {
+      "runtime": 5,
+      "isValid": false,
+      "path": [
+        {"cnv": 3} // Conveyor 3 status is down
+      ]
+    }
+  ]
+}
