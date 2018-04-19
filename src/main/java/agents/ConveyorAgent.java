@@ -15,6 +15,8 @@ import javax.print.attribute.IntegerSyntax;
 import java.util.*;
 
 public class ConveyorAgent extends Agent {
+
+
     private ArrayList<Integer> neighbours;
     private boolean palletStatus;
     private boolean hasWorkStation;
@@ -22,7 +24,25 @@ public class ConveyorAgent extends Agent {
     private JSObject route;
     private Integer name;
 
+    //way to implement behaviours
+    private class pingBehaviour extends Behaviour{
+
+        public void action(){
+
+        }
+        public boolean done(){
+
+        }
+
+    }
+
+
+
     protected void setup(){
+        System.out.println("Hello World. I’m a conveyoragent!");
+        System.out.println("My local-name is "+getAID().getLocalName());
+        System.out.println("My GUID is "+getAID().getName()); System.out.println("My addresses are:");
+        Iterator it = getAID().getAllAddresses(); while (it.hasNext()) { System.out.println("- "+it.next()); }
         neighbours = new ArrayList<Integer>();
         palletStatus = false;
         hasWorkStation = false;
