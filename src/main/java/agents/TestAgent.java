@@ -28,14 +28,18 @@ public class TestAgent extends Agent {
             }
         });
 
-        /*
+        int i = 1;
+
         try {
-            CreateAgent ca = new CreateAgent();
-            ;
+            System.out.println(getContainerController().getContainerName());
+
+            // Creating new agent
+            getContainerController().createNewAgent("cnv_" + i,
+                    "agents.TestAgent2",
+                    null).start();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        */
         /*
         try {
             System.out.println(getArguments()[0]);
