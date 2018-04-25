@@ -50,6 +50,12 @@ public class TestAgent extends Agent {
             // Retrieving JSONArray
             JSONArray it2 = (JSONArray)configJson.get("paths");
 
+            JSONObject asd = new JSONObject();
+            asd.put("name", "cnv_8");
+            asd.put("hasWorkstation", "false");
+
+            it2.add(asd);
+
             // We can check if element exists by checking if it's not null
             if (it2 != null) {
                 // Iterating through JSONArray
@@ -64,6 +70,11 @@ public class TestAgent extends Agent {
                     );
                 }
             }
+
+            JSONObject toPut = new JSONObject();
+            toPut.put("Path", it2);
+
+            System.out.println(toPut.toJSONString());
         } catch (Exception e) {
             e.printStackTrace();
         }
