@@ -1,0 +1,7 @@
+{
+  "idleTime": 15,
+  "paths": [
+    {"name": "cnv_1", "hasWorkstation": false},
+    {"name": "cnv_2", "hasWorkstation": true}
+  ]
+}
