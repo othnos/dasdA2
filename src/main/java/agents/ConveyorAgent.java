@@ -1,5 +1,7 @@
 package agents;
 
+import FIPA.AgentID;
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.*;
 import jade.lang.acl.ACLMessage;
@@ -8,85 +10,141 @@ import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jdk.nashorn.internal.parser.JSONParser;
-import netscape.javascript.JSObject;
-
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import javax.print.attribute.IntegerSyntax;
+import java.io.IOException;
 import java.util.*;
 
 public class ConveyorAgent extends Agent {
 
-
-    private ArrayList<Integer> neighbours;
-    private boolean palletStatus;
-    private boolean hasWorkStation;
+    //private boolean palletStatus;
+    //private boolean hasWorkStation;
     private int conveyorStatus;
-    private JSObject route;
-    private Integer name;
+    private HashSet<String> neighbours;
 
-    //way to implement behaviours
-    private class pingBehaviour extends Behaviour{
+    private String name;
 
-        public void action(){
+    protected void setup() {
 
-        }
-        public boolean done(){
-
-        }
-
-    }
-
-
-
-    protected void setup(){
-        System.out.println("Hello World. I’m a conveyoragent!");
-        System.out.println("My local-name is "+getAID().getLocalName());
-        System.out.println("My GUID is "+getAID().getName()); System.out.println("My addresses are:");
-        Iterator it = getAID().getAllAddresses(); while (it.hasNext()) { System.out.println("- "+it.next()); }
-        neighbours = new ArrayList<Integer>();
-        palletStatus = false;
-        hasWorkStation = false;
         conveyorStatus = 0;
-        name = 0;
+        name = "";
+        neighbours = new HashSet<String>();
+
     }
 
-    public void setName(int name_){
+    //behaviour to act upon the json:s
+    private class jsonBehaviourSend extends Behaviour {
+
+        private JSONObject route;
+        private Integer name;
+
+        private jsonBehaviourSend(JSONObject route_, Integer name_){
+
+            route = route_;
+            name = name_;
+
+        }
+        //runs once on call up
+        public void onStart() {
+
+        }
+
+        public void action() {
+
+            if (this.name == route.get("source")){
+
+            }
+
+            //sends the route to the original source if no neighbours
+            else if(neighbours.isEmpty()){
+                ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+                req.addReceiver((AID)route.get("source"));
+                myAgent.send(req);
+            }
+
+
+            else {
+                JSONArray it2 = (JSONArray)route.get("paths");
+                //route.put("path", this.name);
+                it2.add(this.name);
+
+                for (String neighbour : neighbours) {
+                    ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+
+                    //adds he neighbour as receiver of the message
+                    req.addReceiver(getAID(neighbour));
+                    try {
+                        req.setContentObject(route.toJSONString());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    myAgent.send(req);
+                }
+            }
+        }
+        public boolean done() {
+            return true;
+        }
+    }
+
+    private class ReceiveAccept extends CyclicBehaviour{
+        private MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+        private ReceiveAccept(){
+        }
+        public void action() {
+            ACLMessage msg = myAgent.receive(mt);
+            if (msg != null) {
+                // ACCEPT received. Process it ...
+                }
+            else {
+                block();
+            }
+        }
+    }
+    private class ReceiveRefuse extends CyclicBehaviour{
+        private MessageTemplate mt2 = MessageTemplate.MatchPerformative(ACLMessage.REJECT_PROPOSAL);
+        private ReceiveRefuse(){
+        }
+        public void action() {
+            ACLMessage msg = myAgent.receive(mt2);
+            if (msg != null) {
+                // REJECT RECEIVED, ignore it...
+            }
+            else {
+                block();
+            }
+        }
+    }
+
+    //private class choosePath extends TickerBehaviour
+
+    public void actUponJSON(JSONObject route_, Integer name_){
+        addBehaviour(new jsonBehaviourSend(route_, name_));
+    }
+    public void setName(String name_){
         name = name_;
     }
 
-     public void addNeighbour(int number){
-        neighbours.add(number);
+    public void receiveMessages() {
+        ACLMessage msg = receive();
+        if (msg != null) {
+
+        }
+    }
+     public void addNeighbour(String neighbour){
+        neighbours.add(neighbour);
     }
 
-    public ArrayList<Integer> getNeighbours(){
+    public Set getNeighbours(){
         return neighbours;
-    }
-
-    public void setWorkstation(){
-        hasWorkStation = true;
-    }
-
-    public void resetWorkstation(){
-        hasWorkStation = false;
-    }
-
-    public void setPalletStatus(){
-        palletStatus = true;
-    }
-
-    public void resetPalletStatus(){
-        palletStatus = false;
     }
 
     public void setConveyorStatus(int status){
         conveyorStatus = status;
     }
 
-    public void setJSONobject(JSObject route_){
-        route = route_;
-    }
 
-    public void addToJSON(){
-
-    }
 }
