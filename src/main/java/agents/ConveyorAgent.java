@@ -21,15 +21,40 @@ import java.util.*;
 public class ConveyorAgent extends Agent {
 
     //private boolean palletStatus;
-    //private boolean hasWorkStation;
+    private boolean hasWorkStation;
     private int conveyorStatus;
+
     private HashSet<String> neighbours;
+    private String nick;
 
     protected void setup() {
+        try {
+            // Get constructing arguments from ContainerController's
+            // createNewAgent-method
+            Object[] args = getArguments();
+
+            // Throw Exception if arguments are null
+            if (args == null) {
+                throw new Exception("Arguments were null");
+            }
+
+            // Arguments passed are in LayOutBuilderAgent createAgents-method
+            nick = args[0].toString();
+            hasWorkStation = Boolean.parseBoolean(args[1].toString());
+
+            neighbours = (HashSet<String>) args[2];
+        } catch (Exception e) {
+            System.out.print("Conveyor couldn't be created. Stack trace: ");
+            e.printStackTrace();
+
+            // Delete this agent since it couldn't be initialized correctly
+            this.doDelete();
+        }
 
         conveyorStatus = 0;
         neighbours = new HashSet<String>();
 
+        addBehaviour(new ReceiveRefuse(this));
     }
 
     //behaviour to act upon the json:s
@@ -154,12 +179,22 @@ public class ConveyorAgent extends Agent {
     //for acquiring messages to be rejected
     private class ReceiveRefuse extends CyclicBehaviour{
         private MessageTemplate mt3 = MessageTemplate.MatchPerformative(ACLMessage.REJECT_PROPOSAL);
-        private ReceiveRefuse(){
+        private ReceiveRefuse(Agent a) {
+            super(a);
         }
+
         public void action() {
             ACLMessage msg = myAgent.receive(mt3);
             if (msg != null) {
                 //refuse message
+
+                // TODO: This reply message is for testing purposes only
+                System.out.println("Tulostuuko tämä viesti?");
+
+                ACLMessage reply = msg.createReply();
+                reply.setPerformative(ACLMessage.INFORM);
+                reply.setContent("pung");
+                send(reply);
             }
 
             else {
