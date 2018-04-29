@@ -27,6 +27,42 @@ public class ConveyorAgent extends Agent {
 
     protected void setup() {
 
+        Object[] args = getArguments();
+
+        if (args != null) {
+            String nick = args[0].toString();
+            Boolean hasWs = Boolean.parseBoolean(args[1].toString());
+
+            @SuppressWarnings("unchecked")
+            HashSet<String> neighbours = (HashSet<String>)args[2];
+
+            System.out.println(neighbours);
+
+            //System.out.println("Nick: " + nick + ", Neighbours: " + args[2].toString());
+
+        }
+
+        /*
+
+        if (args != null) {
+            for (Object arg : args) {
+                System.out.println("- " + arg);
+            }
+        }
+
+        HashSet<String> neighbours = null;
+
+        if (args.length >= 2 && args[1] != null) {
+            neighbours = (HashSet<String>) args[1];
+        }
+
+        items[0].trim(),
+                Boolean.parseBoolean(items[1].trim()),
+                Integer.parseInt(data.get("workTime").toString()),
+                Integer.parseInt(data.get("throughputTime").toString()),
+                Integer.parseInt(data.get("timeout").toString())
+        */
+
         conveyorStatus = 0;
         neighbours = new HashSet<String>();
 
