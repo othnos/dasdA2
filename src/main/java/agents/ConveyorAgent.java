@@ -30,6 +30,7 @@ public class ConveyorAgent extends Agent {
         conveyorStatus = 0;
         neighbours = new HashSet<String>();
 
+        addBehaviour(new ReceiveRefuse(this));
     }
 
     //behaviour to act upon the json:s
@@ -154,12 +155,22 @@ public class ConveyorAgent extends Agent {
     //for acquiring messages to be rejected
     private class ReceiveRefuse extends CyclicBehaviour{
         private MessageTemplate mt3 = MessageTemplate.MatchPerformative(ACLMessage.REJECT_PROPOSAL);
-        private ReceiveRefuse(){
+        private ReceiveRefuse(Agent a) {
+            super(a);
         }
+
         public void action() {
             ACLMessage msg = myAgent.receive(mt3);
             if (msg != null) {
                 //refuse message
+
+                // TODO: This reply message is for testing purposes only
+                System.out.println("Tulostuuko tämä viesti?");
+
+                ACLMessage reply = msg.createReply();
+                reply.setPerformative(ACLMessage.INFORM);
+                reply.setContent("pung");
+                send(reply);
             }
 
             else {
