@@ -38,18 +38,17 @@ public class LayOutBuilderAgent extends Agent {
         private String nick_;
         private boolean hasWorkstation_;
         private HashSet<String> neighbours_ = new HashSet<>();
+        private HashMap<String, Integer> config_;
 
-        private int workTime_;
-        private int througputTime_;
-        private int timeout_;
 
         public Conveyor(String nick, boolean ws, int wt, int tpt, int to){
 
             nick_ = nick;
             hasWorkstation_ = ws;
-            workTime_ = wt;
-            througputTime_ = tpt;
-            timeout_ = to;
+            config_ = new HashMap<>();
+            config_.put("workTime", wt);
+            config_.put("throughputTime", tpt);
+            config_.put("timeout", wt);
         }
 
         public void addNeighbour(String neighbour){
@@ -65,7 +64,7 @@ public class LayOutBuilderAgent extends Agent {
         }
 
         public Object [] getCreateData(){
-            Object [] data = new Object[]{nick_, hasWorkstation_, neighbours_};
+            Object [] data = new Object[]{hasWorkstation_, neighbours_,config_};
 
             return data;
         }
