@@ -7,6 +7,9 @@ import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.wrapper.ControllerException;
 import jade.wrapper.StaleProxyException;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import java.io.*;
 /*import jade.core.behaviours.*;
@@ -19,6 +22,8 @@ import javafx.util.Pair;
 
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;*/
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,11 +39,17 @@ public class LayOutBuilderAgent extends Agent {
         private boolean hasWorkstation_;
         private HashSet<String> neighbours_ = new HashSet<>();
 
-        public Conveyor(String nick, boolean ws){
+        private int workTime_;
+        private int througputTime_;
+        private int timeout_;
+
+        public Conveyor(String nick, boolean ws, int wt, int tpt, int to){
 
             nick_ = nick;
             hasWorkstation_ = ws;
-
+            workTime_ = wt;
+            througputTime_ = tpt;
+            timeout_ = to;
         }
 
         public void addNeighbour(String neighbour){
@@ -83,10 +94,50 @@ public class LayOutBuilderAgent extends Agent {
 
     }
 
+    protected JSONObject getConfigData(){
+        //get json config data
+
+            // Init new parser to parse the config.json file
+            JSONParser parser = new JSONParser();
+
+            try {
+                // Config's filepath
+                String filepath = "./testLayouts/config.json";
+
+                // Read the whole config file to String s
+                String s = String.join("", // Join List<String> with "" as delimiter
+                        Files.readAllLines(         // Read rows to the List<String>
+                                Paths.get(filepath) // Form the Path from the filepath string
+                        )
+                );
+
+                // Use JSONParser to parse string to JSONObject
+                JSONObject configJson = (JSONObject)parser.parse(s);
+
+                /* Value of the JSON key can be then accessed like this
+                String idleTime = configJson.get("idleTime").toString();
+                System.out.println(idleTime);*/
+
+                return configJson;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return new JSONObject();
+    }
+
 
     protected void read(/*String[] args*/)throws IOException{
-        String path = "C:\\Skole\\Distributed Automation Systems design\\Assignments\\Assignment2\\JadeMaven-master\\JadeMaven-master\\testLayouts";
-        File fileToRead = new File(path + "\\layout1.csv");
+
+        JSONObject data = getConfigData();
+
+
+        //String path = "C:\\Skole\\Distributed Automation Systems design\\Assignments\\Assignment2\\JadeMaven-master\\JadeMaven-master\\testLayouts";
+        //File fileToRead = new File(path + "\\layout1.csv");Paths.get(filepath)
+
+        String filepath = "./testLayouts/layout1.csv";
+
+        File fileToRead = new File(filepath);
 
         BufferedReader b = new BufferedReader(new FileReader(fileToRead));
         String readLine = "";
@@ -105,7 +156,12 @@ public class LayOutBuilderAgent extends Agent {
                 layout.put(items[0],
                         new Conveyor(
                                 items[0].trim(),
-                                Boolean.parseBoolean(items[1].trim())));
+                                Boolean.parseBoolean(items[1].trim()),
+                                Integer.parseInt(data.get("workTime").toString()),
+                                Integer.parseInt(data.get("throughputTime").toString()),
+                                Integer.parseInt(data.get("timeout").toString())
+                                )
+                );
 
             for (String piece: items) {
                 System.out.print(piece + " ");
@@ -115,8 +171,13 @@ public class LayOutBuilderAgent extends Agent {
 
 
         // read neighbour information from other csv file
-        path = "C:\\Skole\\Distributed Automation Systems design\\Assignments\\Assignment2\\JadeMaven-master\\JadeMaven-master\\testLayouts";
-        fileToRead = new File(path + "\\layout1neighbors.csv");
+        //path = "C:\\Skole\\Distributed Automation Systems design\\Assignments\\Assignment2\\JadeMaven-master\\JadeMaven-master\\testLayouts";
+        //fileToRead = new File(path + "\\layout1neighbors.csv");
+
+        filepath = "./testLayouts/layout1neighbors.csv";
+
+        fileToRead = new File(filepath);
+
 
         b = new BufferedReader(new FileReader(fileToRead));
         readLine = "";
