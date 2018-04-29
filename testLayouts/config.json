@@ -1,5 +1,8 @@
 {
+  // If the conveyor has work station, how long it will take to finish the work piece.
   "workTime": 20,
+  // How long it takes the pallet to get through the conveyor.
   "throughputTime": 5,
+  // How long the conveyor with pallet will wait for path responses.
   "timeout": 15
 }
