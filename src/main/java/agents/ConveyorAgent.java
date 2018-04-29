@@ -106,7 +106,7 @@ public class ConveyorAgent extends Agent {
                     }
                 }
 
-                if (found == false) {
+                if (!found) {
                     JSONArray it2 = (JSONArray) route.get("paths");
                     //route.put("path", this.name);
                     it2.add(myAgent.getLocalName());

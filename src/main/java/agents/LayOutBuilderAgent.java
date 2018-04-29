@@ -48,7 +48,7 @@ public class LayOutBuilderAgent extends Agent {
             config_ = new HashMap<>();
             config_.put("workTime", wt);
             config_.put("throughputTime", tpt);
-            config_.put("timeout", wt);
+            config_.put("timeout", to);
         }
 
         public void addNeighbour(String neighbour){
