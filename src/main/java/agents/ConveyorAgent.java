@@ -168,12 +168,6 @@ public class ConveyorAgent extends Agent {
         }
     }
 
-    public void receiveMessages() {
-        ACLMessage msg = receive();
-        if (msg != null) {
-        }
-    }
-
      public void addNeighbour(String neighbour){
         neighbours.add(neighbour);
     }
