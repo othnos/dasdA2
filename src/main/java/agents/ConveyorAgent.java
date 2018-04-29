@@ -25,12 +25,9 @@ public class ConveyorAgent extends Agent {
     private int conveyorStatus;
     private HashSet<String> neighbours;
 
-    private String name;
-
     protected void setup() {
 
         conveyorStatus = 0;
-        name = "";
         neighbours = new HashSet<String>();
 
     }
@@ -169,10 +166,6 @@ public class ConveyorAgent extends Agent {
                 block();
             }
         }
-    }
-
-    public void setName(String name_){
-        name = name_;
     }
 
     public void receiveMessages() {
