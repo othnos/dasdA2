@@ -35,18 +35,14 @@ public class ConveyorAgent extends Agent {
 
     }
 
-
-
-        //behaviour to act upon the json:s
+    //behaviour to act upon the json:s
     private class jsonBehaviourSend extends Behaviour {
 
         private JSONObject route;
-        private Integer name;
 
         private jsonBehaviourSend(JSONObject route_, Integer name_){
 
             route = route_;
-            name = name_;
 
         }
         //runs once on call up
@@ -57,33 +53,54 @@ public class ConveyorAgent extends Agent {
         public void action() {
 
             if (this.name == route.get("source")){
-
-            }
-
-            //sends the route to the original source if no neighbours
-            else if(neighbours.isEmpty()){
-                ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+                ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
                 req.addReceiver((AID)route.get("source"));
                 myAgent.send(req);
             }
 
+            //sends the route to the original source if no neighbours
+            else if(neighbours.isEmpty()){
+                ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
+                req.addReceiver((AID)route.get("source"));
+                myAgent.send(req);
+            }
 
             else {
-                JSONArray it2 = (JSONArray)route.get("paths");
-                //route.put("path", this.name);
-                it2.add(this.name);
+                boolean found = false;
 
                 for (String neighbour : neighbours) {
-                    ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
 
-                    //adds he neighbour as receiver of the message
-                    req.addReceiver(getAID(neighbour));
-                    try {
-                        req.setContentObject(route.toJSONString());
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    //handle the "found destination"
+                    if (neighbour.equals(route.get.toString("destination"))) {
+                        found = true;
+                        ACLMessage req = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+                        req.addReceiver((AID)route.get("source"));
+                        try {
+                            req.setContentObject(route.toJSONString());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        myAgent.send(req);
                     }
-                    myAgent.send(req);
+                }
+
+                if (found == false) {
+                    JSONArray it2 = (JSONArray) route.get("paths");
+                    //route.put("path", this.name);
+                    it2.add(this.name);
+
+                    for (String neighbour : neighbours) {
+                        ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+
+                        //adds he neighbour as receiver of the message
+                        req.addReceiver(getAID(neighbour));
+                        try {
+                            req.setContentObject(route.toJSONString());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        myAgent.send(req);
+                    }
                 }
             }
         }
@@ -92,28 +109,46 @@ public class ConveyorAgent extends Agent {
         }
     }
 
-    private class ReceiveAccept extends CyclicBehaviour{
-        private ArrayList<JSONArray> pathList;
-        private MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
-        private ReceiveAccept(){
+    //for acquiring messages of JSON to be checked
+    private class ReceiveRequest extends CyclicBehaviour{
+        private MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+        private ReceiveRequest(){
         }
         public void action() {
             ACLMessage msg = myAgent.receive(mt);
             if (msg != null) {
-                pathList.add((JSONArray)route.get("paths"));
-                // ACCEPT received. Process it ...
-                }
+                // REQUEST received. Process it ...
+                void addBehaviour(actUponJSON(msg.route.toJSONObject()));
+            }
             else {
                 block();
             }
         }
     }
-    private class ReceiveRefuse extends CyclicBehaviour{
-        private MessageTemplate mt2 = MessageTemplate.MatchPerformative(ACLMessage.REJECT_PROPOSAL);
-        private ReceiveRefuse(){
+
+    //for acquiring possible paths for the workpiece
+    private class ReceiveAccept extends CyclicBehaviour{
+        private MessageTemplate mt2 = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+        private ReceiveAccept(){
         }
         public void action() {
             ACLMessage msg = myAgent.receive(mt2);
+            if (msg != null) {
+                void addBehaviour(actUponJSON(msg.route.toJSONObject()));
+            }
+            else {
+                block();
+            }
+        }
+    }
+
+    //for acquiring messages to be rejected
+    private class ReceiveRefuse extends CyclicBehaviour{
+        private MessageTemplate mt3 = MessageTemplate.MatchPerformative(ACLMessage.REJECT_PROPOSAL);
+        private ReceiveRefuse(){
+        }
+        public void action() {
+            ACLMessage msg = myAgent.receive(mt3);
             if (msg != null) {
                 // REJECT RECEIVED, ignore it...
             }
@@ -123,16 +158,10 @@ public class ConveyorAgent extends Agent {
         }
     }
 
-    public void choosingPath(){
-        addBehaviour(new WakerBehaviour(this, 5000) {
-            protected void onWake() {
+    public void actUponJSON(JSONObject route_){
+        addBehaviour(new jsonBehaviourSend(route_));
+    }
 
-            }
-        });
-    }
-    public void actUponJSON(JSONObject route_, Integer name_){
-        addBehaviour(new jsonBehaviourSend(route_, name_));
-    }
     public void setName(String name_){
         name = name_;
     }
@@ -140,9 +169,9 @@ public class ConveyorAgent extends Agent {
     public void receiveMessages() {
         ACLMessage msg = receive();
         if (msg != null) {
-
         }
     }
+
      public void addNeighbour(String neighbour){
         neighbours.add(neighbour);
     }
@@ -154,6 +183,8 @@ public class ConveyorAgent extends Agent {
     public void setConveyorStatus(int status){
         conveyorStatus = status;
     }
-
-
 }
+
+addBehaviour(new ReceiveRequest);
+addBehaviour(new ReceiveAccept);
+addBehaviour(new RejectRefuse);
