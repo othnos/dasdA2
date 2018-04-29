@@ -1,8 +1,5 @@
 {
+  "workTime": 10,
   "idleTime": 15,
-  "idleTime": 25,
-  "paths": [
-    {"name": "cnv_1", "hasWorkstation": false},
-    {"name": "cnv_2", "hasWorkstation": true}
-  ]
+  "timeout": 15
 }
