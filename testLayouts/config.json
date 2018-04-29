@@ -1,5 +1,5 @@
 {
-  "workTime": 10,
-  "idleTime": 15,
+  "workTime": 20,
+  "throughputTime": 5,
   "timeout": 15
 }
