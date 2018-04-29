@@ -35,7 +35,9 @@ public class ConveyorAgent extends Agent {
 
     }
 
-    //behaviour to act upon the json:s
+
+
+        //behaviour to act upon the json:s
     private class jsonBehaviourSend extends Behaviour {
 
         private JSONObject route;
@@ -91,12 +93,14 @@ public class ConveyorAgent extends Agent {
     }
 
     private class ReceiveAccept extends CyclicBehaviour{
+        private ArrayList<JSONArray> pathList;
         private MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
         private ReceiveAccept(){
         }
         public void action() {
             ACLMessage msg = myAgent.receive(mt);
             if (msg != null) {
+                pathList.add((JSONArray)route.get("paths"));
                 // ACCEPT received. Process it ...
                 }
             else {
@@ -119,8 +123,13 @@ public class ConveyorAgent extends Agent {
         }
     }
 
-    //private class choosePath extends TickerBehaviour
+    public void choosingPath(){
+        addBehaviour(new WakerBehaviour(this, 5000) {
+            protected void onWake() {
 
+            }
+        });
+    }
     public void actUponJSON(JSONObject route_, Integer name_){
         addBehaviour(new jsonBehaviourSend(route_, name_));
     }
