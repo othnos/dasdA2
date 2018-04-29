@@ -158,8 +158,8 @@ public class ConveyorAgent extends Agent {
         }
     }
 
-    public void actUponJSON(JSONObject route_, Integer name_){
-        addBehaviour(new jsonBehaviourSend(route_, name_));
+    public void actUponJSON(JSONObject route_){
+        addBehaviour(new jsonBehaviourSend(route_));
     }
     public void setName(String name_){
         name = name_;
@@ -183,6 +183,7 @@ public class ConveyorAgent extends Agent {
         conveyorStatus = status;
     }
 }
+
 addBehaviour(ReceiveRequest);
 addBehaviour(ReceiveAccept);
 addBehaviour(RejectRefuse);
