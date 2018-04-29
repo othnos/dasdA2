@@ -1,14 +1,9 @@
 package agents;
 
-import jade.core.*;
+import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
-import jade.domain.DFService;
-import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jade.domain.FIPAException;
-import jade.domain.JADEAgentManagement.CreateAgent;
 import jade.lang.acl.ACLMessage;
-import jade.util.Logger;
+import jade.wrapper.StaleProxyException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -18,6 +13,45 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 
 public class TestAgent extends Agent {
+    // The GUI
+    private PathGui myGui;
+
+    /**
+     * Setup the test agent
+     */
+    protected void setup() {
+        System.out.println("Hello. My name is "+getLocalName());
+
+        // Create and show the GUI
+        myGui = new PathGui(this);
+        myGui.showGui();
+
+        addBehaviour(new CyclicBehaviour() {
+            public void action() {
+                ACLMessage msgRx = receive();
+                if (msgRx != null) {
+                    System.out.println(msgRx);
+                    ACLMessage msgTx = msgRx.createReply();
+                    msgTx.setContent("Hello!");
+                    send(msgTx);
+                } else {
+                    block();
+                }
+            }
+        });
+
+        // Create couple proxy test agents
+        try {
+            getContainerController().createNewAgent("proxy1",
+                    "agents.ProxyTestAgent",
+                    new Object[]{}).start();
+            getContainerController().createNewAgent("proxy2",
+                    "agents.ProxyTestAgent",
+                    new Object[]{}).start();
+        } catch (StaleProxyException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * JSON decoding example
@@ -71,67 +105,44 @@ public class TestAgent extends Agent {
                 }
             }
 
-            JSONObject toPut = new JSONObject();
-            toPut.put("Path", it2);
+            JSONArray newPath = new JSONArray();
+            newPath.add("Joo");
+            newPath.add("Jaa");
 
-            System.out.println(toPut.toJSONString());
+            configJson.put("NewPath", newPath);
+
+            System.out.println(configJson.toJSONString());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    protected void setup() {
-        System.out.println("Hello. My name is "+getLocalName());
-        addBehaviour(new CyclicBehaviour() {
-            public void action() {
-                ACLMessage msgRx = receive();
-                if (msgRx != null) {
-                    System.out.println(msgRx);
-                    ACLMessage msgTx = msgRx.createReply();
-                    msgTx.setContent("Hello!");
-                    send(msgTx);
-                } else {
-                    block();
-                }
-            }
-        });
+    protected void testi() {
+        int i = 1;
 
-        printFileExample();
-
-        if (false) {
-            int i = 1;
-
-            try {
-                System.out.println(getContainerController().getContainerName());
-
-                HashSet<String> neighbours = new HashSet<>();
-                neighbours.add("cnv_1");
-                neighbours.add("cnv_2");
-
-                System.out.println(Boolean.parseBoolean(""));
-                System.out.println(Boolean.parseBoolean("     true".trim()));
-                System.out.println(Boolean.parseBoolean("true    "));
-                System.out.println(Boolean.parseBoolean("true"));
-
-                // Creating new agent
-                getContainerController().createNewAgent("cnv_" + i,
-                        "agents.TestAgent2",
-                        new Object[]{"cnv_1", false, neighbours}).start();
-                System.out.println(
-                        getContainerController().getAgent("cnv_" + i).getName()
-                );
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        /*
         try {
-            System.out.println(getArguments()[0]);
+            System.out.println(getContainerController().getContainerName());
+
+            HashSet<String> neighbours = new HashSet<>();
+            neighbours.add("cnv_1");
+            neighbours.add("cnv_2");
+
+            System.out.println(Boolean.parseBoolean(""));
+            System.out.println(Boolean.parseBoolean("     true".trim()));
+            System.out.println(Boolean.parseBoolean("true    "));
+            System.out.println(Boolean.parseBoolean("true"));
+
+            // Creating new agent
+            getContainerController().createNewAgent("cnv_" + i,
+                    "agents.TestAgent2",
+                    new Object[]{"cnv_1", false, neighbours}).start();
+
+            System.out.println(
+                    getContainerController().getAgent("cnv_" + i).getName()
+            );
         } catch (Exception e) {
             e.printStackTrace();
         }
-        */
-
     }
 
 
