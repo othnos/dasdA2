@@ -26,6 +26,10 @@ public class ConveyorAgent extends Agent {
 
     private HashSet<String> neighbours;
     private String nick;
+    private int workTime;
+    private int thruputTime;
+    private int timeOut;
+    private JSONObject targets;
 
     protected void setup() {
         try {
@@ -43,6 +47,11 @@ public class ConveyorAgent extends Agent {
             hasWorkStation = Boolean.parseBoolean(args[1].toString());
 
             neighbours = (HashSet<String>) args[2];
+
+            workTime = Integer.parseInt(args[2].toString());
+            thruputTime = Integer.parseInt(args[3].toString());
+            timeOut = Integer.parseInt(args[4].toString());
+
         } catch (Exception e) {
             System.out.print("Conveyor couldn't be created. Stack trace: ");
             e.printStackTrace();
@@ -54,25 +63,76 @@ public class ConveyorAgent extends Agent {
         conveyorStatus = 0;
         neighbours = new HashSet<String>();
 
+        addBehaviour(new ReceiveRequest(this));
+        addBehaviour(new ReceiveAccept(this));
         addBehaviour(new ReceiveRefuse(this));
+
+    }
+
+
+    //behaviour to play with the workpieces
+    private class movingStuff extends Behaviour{
+        private AID target;
+        private boolean cont;
+        private JSONArray stripdRoute;
+
+        private movingStuff(){
+
+        }
+        //ticker behaviour for the thruput time simulation
+        Behaviour thruPut = new TickerBehaviour(myAgent, thruputTime){
+            protected void onTick(){
+                cont = true;
+            }
+        };
+
+        //startup sets the target agent from the jsonobject targets and strips it from the path which gets
+        //assigned on the next conveyor again. Leaves(?) soruce and destination.
+        public void onStart() {
+            cont = false;
+            target = (AID)targets.get(myAgent.getLocalName());
+            stripdRoute = (JSONArray) targets.get("paths");
+            stripdRoute.clear();
+        }
+
+        public void action() {
+            addBehaviour(thruPut);
+
+            //waits for the tikcer behaviour
+            while (!cont){
+                //wait for thruput time
+            }
+            ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+            req.addReceiver((AID)target);
+            try {
+                req.setContentObject(stripdRoute.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            myAgent.send(req);;
+
+        }
+        public boolean done() {
+            return true;
+        }
     }
 
     //behaviour to act upon the json:s
-    private class jsonBehaviourSend extends Behaviour {
-
+    private class jsonMessage extends Behaviour {
         private JSONObject route;
 
-        private jsonBehaviourSend(JSONObject route_){
-
+        private jsonMessage(JSONObject route_){
             route = route_;
-
         }
+
+
         //runs once on call up
         public void onStart() {
 
         }
 
         public void action() {
+
 
             if (myAgent.getLocalName() == route.get("source")){
                 ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
@@ -135,17 +195,15 @@ public class ConveyorAgent extends Agent {
     private class ReceiveRequest extends CyclicBehaviour {
         private MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
         JSONParser parser = new JSONParser();
-
-        private ReceiveRequest() {
+        private ReceiveRequest(Agent a) {
+            super(a);
         }
-
         public void action() {
             ACLMessage msg = myAgent.receive(mt);
-
             if (msg != null) {
                 try {
                     JSONObject route_ = (JSONObject) parser.parse(msg.getContent());
-                    addBehaviour(new jsonBehaviourSend(route_));
+                    addBehaviour(new jsonMessage(route_));
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
@@ -156,14 +214,27 @@ public class ConveyorAgent extends Agent {
     private class ReceiveAccept extends CyclicBehaviour{
         private MessageTemplate mt2 = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
         JSONParser parser = new JSONParser();
-        private ReceiveAccept(){
+        private ReceiveAccept(Agent a){
+            super(a);
+
         }
+        Behaviour decider = new TickerBehaviour(myAgent, 10000){
+            protected void onTick(){
+                //decide target
+                addBehaviour(new movingStuff());
+            }
+        };
         public void action() {
             ACLMessage msg = myAgent.receive(mt2);
             if (msg != null) {
+                addBehaviour( decider );
                 try {
                     JSONObject route_ = (JSONObject) parser.parse(msg.getContent());
-                    addBehaviour(new jsonBehaviourSend(route_));
+
+                    if(route_.size()<targets.size()){
+                        targets = route_;
+                    }
+
                 }
                 catch (ParseException e) {
                     e.printStackTrace();
