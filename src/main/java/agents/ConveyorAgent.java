@@ -39,12 +39,10 @@ public class ConveyorAgent extends Agent {
     private class jsonBehaviourSend extends Behaviour {
 
         private JSONObject route;
-        private Integer name;
 
         private jsonBehaviourSend(JSONObject route_, Integer name_){
 
             route = route_;
-            name = name_;
 
         }
         //runs once on call up
@@ -120,7 +118,7 @@ public class ConveyorAgent extends Agent {
             ACLMessage msg = myAgent.receive(mt);
             if (msg != null) {
                 // REQUEST received. Process it ...
-                void addBehaviour(actUponJSON(msg.route));
+                void addBehaviour(actUponJSON(msg.route.toJSONObject()));
             }
             else {
                 block();
@@ -130,13 +128,13 @@ public class ConveyorAgent extends Agent {
 
     //for acquiring possible paths for the workpiece
     private class ReceiveAccept extends CyclicBehaviour{
-        private MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+        private MessageTemplate mt2 = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
         private ReceiveAccept(){
         }
         public void action() {
-            ACLMessage msg = myAgent.receive(mt);
+            ACLMessage msg = myAgent.receive(mt2);
             if (msg != null) {
-                void addBehaviour(actUponJSON(msg.route));
+                void addBehaviour(actUponJSON(msg.route.toJSONObject()));
             }
             else {
                 block();
@@ -146,11 +144,11 @@ public class ConveyorAgent extends Agent {
 
     //for acquiring messages to be rejected
     private class ReceiveRefuse extends CyclicBehaviour{
-        private MessageTemplate mt2 = MessageTemplate.MatchPerformative(ACLMessage.REJECT_PROPOSAL);
+        private MessageTemplate mt3 = MessageTemplate.MatchPerformative(ACLMessage.REJECT_PROPOSAL);
         private ReceiveRefuse(){
         }
         public void action() {
-            ACLMessage msg = myAgent.receive(mt2);
+            ACLMessage msg = myAgent.receive(mt3);
             if (msg != null) {
                 // REJECT RECEIVED, ignore it...
             }
@@ -159,8 +157,6 @@ public class ConveyorAgent extends Agent {
             }
         }
     }
-
-    //private class choosePath extends TickerBehaviour
 
     public void actUponJSON(JSONObject route_, Integer name_){
         addBehaviour(new jsonBehaviourSend(route_, name_));
@@ -186,6 +182,7 @@ public class ConveyorAgent extends Agent {
     public void setConveyorStatus(int status){
         conveyorStatus = status;
     }
-
-
 }
+addBehaviour(ReceiveRequest);
+addBehaviour(ReceiveAccept);
+addBehaviour(RejectRefuse);
