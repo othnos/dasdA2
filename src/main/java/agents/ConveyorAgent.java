@@ -21,47 +21,35 @@ import java.util.*;
 public class ConveyorAgent extends Agent {
 
     //private boolean palletStatus;
-    //private boolean hasWorkStation;
+    private boolean hasWorkStation;
     private int conveyorStatus;
+
     private HashSet<String> neighbours;
+    private String nick;
 
     protected void setup() {
+        try {
+            // Get constructing arguments from ContainerController's
+            // createNewAgent-method
+            Object[] args = getArguments();
 
-        Object[] args = getArguments();
-
-        if (args != null) {
-            String nick = args[0].toString();
-            Boolean hasWs = Boolean.parseBoolean(args[1].toString());
-
-            @SuppressWarnings("unchecked")
-            HashSet<String> neighbours = (HashSet<String>)args[2];
-
-            System.out.println(neighbours);
-
-            //System.out.println("Nick: " + nick + ", Neighbours: " + args[2].toString());
-
-        }
-
-        /*
-
-        if (args != null) {
-            for (Object arg : args) {
-                System.out.println("- " + arg);
+            // Throw Exception if arguments are null
+            if (args == null) {
+                throw new Exception("Arguments were null");
             }
+
+            // Arguments passed are in LayOutBuilderAgent createAgents-method
+            nick = args[0].toString();
+            hasWorkStation = Boolean.parseBoolean(args[1].toString());
+
+            neighbours = (HashSet<String>) args[2];
+        } catch (Exception e) {
+            System.out.print("Conveyor couldn't be created. Stack trace: ");
+            e.printStackTrace();
+
+            // Delete this agent since it couldn't be initialized correctly
+            this.doDelete();
         }
-
-        HashSet<String> neighbours = null;
-
-        if (args.length >= 2 && args[1] != null) {
-            neighbours = (HashSet<String>) args[1];
-        }
-
-        items[0].trim(),
-                Boolean.parseBoolean(items[1].trim()),
-                Integer.parseInt(data.get("workTime").toString()),
-                Integer.parseInt(data.get("throughputTime").toString()),
-                Integer.parseInt(data.get("timeout").toString())
-        */
 
         conveyorStatus = 0;
         neighbours = new HashSet<String>();
