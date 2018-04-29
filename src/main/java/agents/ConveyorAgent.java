@@ -55,36 +55,57 @@ public class ConveyorAgent extends Agent {
         public void action() {
 
             if (this.name == route.get("source")){
-
-            }
-
-            //sends the route to the original source if no neighbours
-            else if(neighbours.isEmpty()){
-                ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+                ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
                 req.addReceiver((AID)route.get("source"));
                 myAgent.send(req);
             }
 
+            //sends the route to the original source if no neighbours
+            else if(neighbours.isEmpty()){
+                ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
+                req.addReceiver((AID)route.get("source"));
+                myAgent.send(req);
+            }
 
             else {
-                JSONArray it2 = (JSONArray)route.get("paths");
-                //route.put("path", this.name);
-                it2.add(this.name);
+                boolean found = false;
 
                 for (String neighbour : neighbours) {
-                    ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
 
-                    //adds he neighbour as receiver of the message
-                    req.addReceiver(getAID(neighbour));
-                    try {
-                        req.setContentObject(route.toJSONString());
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    //handle the "found destination"
+                    if (neighbour == route.get("destination")) {
+                        found = true;
+                        ACLMessage req = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+                        req.addReceiver((AID)route.get("source"));
+                        try {
+                            req.setContentObject(route.toJSONString());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        myAgent.send(req);
                     }
-                    myAgent.send(req);
+                }
+                if (found == false) {
+                    JSONArray it2 = (JSONArray) route.get("paths");
+                    //route.put("path", this.name);
+                    it2.add(this.name);
+
+                    for (String neighbour : neighbours) {
+                        ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+
+                        //adds he neighbour as receiver of the message
+                        req.addReceiver(getAID(neighbour));
+                        try {
+                            req.setContentObject(route.toJSONString());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        myAgent.send(req);
+                    }
                 }
             }
         }
+
         public boolean done() {
             return true;
         }
