@@ -73,7 +73,7 @@ public class ConveyorAgent extends Agent {
                 for (String neighbour : neighbours) {
 
                     //handle the "found destination"
-                    if (neighbour == route.get("destination")) {
+                    if (neighbour.equals(route.get.toString("destination"))) {
                         found = true;
                         ACLMessage req = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
                         req.addReceiver((AID)route.get("source"));
@@ -85,6 +85,7 @@ public class ConveyorAgent extends Agent {
                         myAgent.send(req);
                     }
                 }
+
                 if (found == false) {
                     JSONArray it2 = (JSONArray) route.get("paths");
                     //route.put("path", this.name);
@@ -105,12 +106,29 @@ public class ConveyorAgent extends Agent {
                 }
             }
         }
-
         public boolean done() {
             return true;
         }
     }
 
+    //for acquiring messages of JSON to be checked
+    private class ReceiveRequest extends CyclicBehaviour{
+        private MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+        private ReceiveRequest(){
+        }
+        public void action() {
+            ACLMessage msg = myAgent.receive(mt);
+            if (msg != null) {
+                // REQUEST received. Process it ...
+                void addBehaviour(actUponJSON(msg.route));
+            }
+            else {
+                block();
+            }
+        }
+    }
+
+    //for acquiring possible paths for the workpiece
     private class ReceiveAccept extends CyclicBehaviour{
         private MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
         private ReceiveAccept(){
@@ -118,13 +136,15 @@ public class ConveyorAgent extends Agent {
         public void action() {
             ACLMessage msg = myAgent.receive(mt);
             if (msg != null) {
-                // ACCEPT received. Process it ...
-                }
+                void addBehaviour(actUponJSON(msg.route));
+            }
             else {
                 block();
             }
         }
     }
+
+    //for acquiring messages to be rejected
     private class ReceiveRefuse extends CyclicBehaviour{
         private MessageTemplate mt2 = MessageTemplate.MatchPerformative(ACLMessage.REJECT_PROPOSAL);
         private ReceiveRefuse(){
