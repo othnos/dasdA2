@@ -44,10 +44,13 @@ public class TestAgent extends Agent {
         try {
             getContainerController().createNewAgent("proxy1",
                     "agents.ProxyTestAgent",
-                    new Object[]{}).start();
+                    new Object[]{"proxy2"}).start();
             getContainerController().createNewAgent("proxy2",
                     "agents.ProxyTestAgent",
-                    new Object[]{}).start();
+                    new Object[]{"proxy3"}).start();
+            getContainerController().createNewAgent("proxy3",
+                    "agents.ProxyTestAgent",
+                    new Object[]{""}).start();
         } catch (StaleProxyException e) {
             e.printStackTrace();
         }

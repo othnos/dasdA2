@@ -1,5 +1,6 @@
 package agents;
 
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
@@ -96,7 +97,22 @@ public class ProxyTestAgent extends Agent {
 
             switch (action.toLowerCase()) {
                 case "get-shortest-path":
-                    System.out.println("Shortest path gotten");
+                    System.out.println(getName() + " gets shortest path.");
+
+                    // Get aid by agent's local name
+                    AID target = new AID(neighbour, AID.ISLOCALNAME);
+
+                    // Agent will understand JSON messages
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("action", "find-shortest-path");
+
+                    // Create REQUEST message
+                    ACLMessage msg = new ACLMessage(ACLMessage.PROXY);
+                    msg.addReceiver(target);
+                    // Convert JSON Object to string
+                    msg.setContent(jsonObject.toJSONString());
+
+                    myAgent.send(msg);
                     break;
                 default:
                     throw new Exception("Action not found.");
@@ -126,7 +142,22 @@ public class ProxyTestAgent extends Agent {
 
             switch (action.toLowerCase()) {
                 case "find-shortest-path":
-                    System.out.println("Shortest path found");
+                    System.out.println(getName() + " is in path.");
+
+                    // Get aid by agent's local name
+                    AID target = new AID(neighbour, AID.ISLOCALNAME);
+
+                    // Agent will understand JSON messages
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("action", "find-shortest-path");
+
+                    // Create REQUEST message
+                    ACLMessage msg = new ACLMessage(ACLMessage.PROXY);
+                    msg.addReceiver(target);
+                    // Convert JSON Object to string
+                    msg.setContent(jsonObject.toJSONString());
+
+                    myAgent.send(msg);
                     break;
                 default:
                     throw new Exception("Action not found.");
@@ -134,7 +165,12 @@ public class ProxyTestAgent extends Agent {
         }
     }
 
+    String neighbour;
+
     protected void setup() {
+        Object[] args = getArguments();
+        neighbour = args[0].toString();
+
         addBehaviour(new RequestRouter());
         addBehaviour(new ProxyRouter());
     }

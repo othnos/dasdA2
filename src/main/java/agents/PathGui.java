@@ -31,14 +31,24 @@ public class PathGui extends JFrame {
         addButton.addActionListener(ev -> {
             try {
                 // Get agent's local name
-                String agentLocalname = titleField.getText().trim();
+                String agentLocalName = titleField.getText().trim();
+
+                // Throws error if agent not found
+                try {
+                    myAgent.getContainerController().getAgent(agentLocalName);
+                } catch (Exception e) {
+                    System.out.println("Agent " + agentLocalName + " not found");
+                    return;
+                }
+
                 // Test print which agent the message is send
-                System.out.println(agentLocalname);
+                System.out.println("Agent " + agentLocalName + " received " +
+                        "REQUEST.");
 
                 // Get aid by agent's local name
-                AID target = new AID(agentLocalname, AID.ISLOCALNAME);
+                AID target = new AID(agentLocalName, AID.ISLOCALNAME);
 
-                // Agent will understand JSON messages
+                // Messages to the agents needs to be in JSON format
                 JSONObject jsonObject = new JSONObject();
                 jsonObject.put("action", "get-shortest-path");
 
