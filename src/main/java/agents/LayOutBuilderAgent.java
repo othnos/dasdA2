@@ -5,6 +5,8 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
+import jade.wrapper.ControllerException;
+import jade.wrapper.StaleProxyException;
 
 import java.io.*;
 /*import jade.core.behaviours.*;
@@ -30,18 +32,55 @@ public class LayOutBuilderAgent extends Agent {
     private class Conveyor{
         private String nick_;
         private boolean hasWorkstation_;
-        private HashSet<String> neighbours_;
+        private HashSet<String> neighbours_ = new HashSet<>();
 
         public Conveyor(String nick, boolean ws){
 
             nick_ = nick;
             hasWorkstation_ = ws;
-            neighbours_ = new HashSet<>();
+
         }
 
         public void addNeighbour(String neighbour){
             neighbours_.add(neighbour);
         }
+
+        public HashSet<String> getNeighbours(){
+            return neighbours_;
+        }
+
+        public String getNick(){
+            return nick_;
+        }
+
+        public Object [] getCreateData(){
+            Object [] data = new Object[]{nick_, hasWorkstation_, neighbours_};
+
+            return data;
+        }
+    }
+
+    protected void createAgents(){
+                                        //new Object[]{"cnv_1", false, neighbours}).start();
+        for (String cnv: layout.keySet()) {
+            // Creating new agent
+            try {
+                getContainerController().createNewAgent(layout.get(cnv).getNick(), "agents.ConveyorAgent",
+                        layout.get(cnv).getCreateData()).start();
+
+                System.out.println(
+                        getContainerController().getAgent(cnv).getName()
+                );
+
+            } catch (StaleProxyException e) {
+                e.printStackTrace();
+            } catch (ControllerException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+
     }
 
 
@@ -54,7 +93,8 @@ public class LayOutBuilderAgent extends Agent {
         while ((readLine = b.readLine()) != null){
             String[] items = readLine.split(";");
 
-            if(items.length < 2){
+            if(items.length > 2 || items.length < 1) {
+                System.out.println("error, wrong amount of parameters, "+ readLine);
                 continue;
             }
 
@@ -73,12 +113,51 @@ public class LayOutBuilderAgent extends Agent {
             System.out.println();
         }
 
+
+        // read neighbour information from other csv file
+        path = "C:\\Skole\\Distributed Automation Systems design\\Assignments\\Assignment2\\JadeMaven-master\\JadeMaven-master\\testLayouts";
+        fileToRead = new File(path + "\\layout1neighbors.csv");
+
+        b = new BufferedReader(new FileReader(fileToRead));
+        readLine = "";
+        while ((readLine = b.readLine()) != null){
+            String[] items = readLine.split(";");
+
+            if (items[0].trim().equals("Cnv")) {
+                continue;
+            }
+
+            if(items.length > 2 || items.length < 1) {
+                System.out.println("error, wrong amount of parameters, "+ readLine);
+                continue;
+            }
+
+            if (layout.get(items[0]) == null){
+                System.out.println("conveyor " + items[0] + " does not exist");
+                        continue;
+            }
+
+            //skip the title row
+            if (items[0].trim().equals("Cnv")) {
+                continue;
+            }
+
+            layout.get(items[0]).addNeighbour(items[1]);
+        }
+        for (String cnv: layout.keySet()){
+            System.out.print(cnv + " has neighbours ");
+            for (String instance: layout.get(cnv).getNeighbours()){
+                System.out.print(instance + " ");
+            }
+            System.out.println();
+        }
     }
 
     protected void setup() {
         System.out.println("Hello. My name is " + getLocalName());
         try {
             read();
+            createAgents();
         } catch (IOException e) {
             e.printStackTrace();
         }
