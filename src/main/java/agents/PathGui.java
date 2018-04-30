@@ -10,16 +10,17 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.HashMap;
+import java.util.Map;
 
 public class PathGui extends JFrame {
     private Agent myAgent;
 
-    private JTextField titleField;
+    private JTextField srcField, destField;
 
     /**
      * Message queue
      */
-    private HashMap<String, String> messageQueue = new HashMap<>();
+    private HashMap<AID, AID> messageQueue = new HashMap<>();
 
     PathGui(Agent a) {
         super(a.getLocalName());
@@ -28,49 +29,74 @@ public class PathGui extends JFrame {
 
         JPanel p = new JPanel();
         p.setLayout(new GridLayout(2, 2));
-        p.add(new JLabel("Proxy local name:"));
-        titleField = new JTextField(15);
-        p.add(titleField);
+
+        p.add(new JLabel("Source:"));
+        srcField = new JTextField(15);
+        p.add(srcField);
+
+        p.add(new JLabel("Destination:"));
+        destField = new JTextField(15);
+        p.add(destField);
         getContentPane().add(p, BorderLayout.CENTER);
 
-        JButton addButton = new JButton("Search shortest path");
+        JButton addButton = new JButton("Add msg");
         addButton.addActionListener(ev -> {
             try {
                 // Get agent's local name
-                String agentLocalName = titleField.getText().trim();
+                String src = srcField.getText().trim();
+                String dest = destField.getText().trim();
 
                 // Throws error if agent not found
                 try {
-                    myAgent.getContainerController().getAgent(agentLocalName);
+                    myAgent.getContainerController().getAgent(src);
+                    myAgent.getContainerController().getAgent(dest);
                 } catch (Exception e) {
-                    System.out.println("Agent " + agentLocalName + " not found");
+                    System.out.println("Source " + src + " or destination " + dest +
+                            " not found");
                     return;
                 }
 
-                // Test print which agent the message is send
-                System.out.println("Agent " + agentLocalName + " received " +
-                        "REQUEST.");
+                // Push source/destination AID pair to the messageQueue to send
+                messageQueue.put(
+                    new AID(src, AID.ISLOCALNAME),
+                    new AID(dest, AID.ISLOCALNAME)
+                );
 
-                // Get aid by agent's local name
-                AID target = new AID(agentLocalName, AID.ISLOCALNAME);
+                System.out.println("Message queue: " + messageQueue);
 
-                // Messages to the agents needs to be in JSON format
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put("action", "get-shortest-path");
-
-                // Create REQUEST message
-                ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-                msg.addReceiver(target);
-                // Convert JSON Object to string
-                msg.setContent(jsonObject.toJSONString());
-
-                myAgent.send(msg);
+                //System.out.println("Src: " + src + ", Dst: " + dest + " added to " +
+                //        "message queue");
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(PathGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
         p = new JPanel();
         p.add(addButton);
+
+        JButton sendButton = new JButton("Search shortest path");
+        sendButton.addActionListener(ev -> {
+            for (Map.Entry<AID, AID> entry : messageQueue.entrySet()) {
+                try {
+                    // Messages to the agents needs to be in JSON format
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("action", "get-shortest-path");
+                    jsonObject.put("src", entry.getKey());
+                    jsonObject.put("dst", entry.getValue());
+
+                    // Create REQUEST message
+                    ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+                    msg.addReceiver(entry.getKey());
+                    // Convert JSON Object to string
+                    msg.setContent(jsonObject.toJSONString());
+
+                    myAgent.send(msg);
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(PathGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        p.add(sendButton);
+
         getContentPane().add(p, BorderLayout.SOUTH);
 
         // Make the agent terminate when the user closes
