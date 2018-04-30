@@ -80,8 +80,8 @@ public class PathGui extends JFrame {
                     // Messages to the agents needs to be in JSON format
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("action", "get-shortest-path");
-                    jsonObject.put("src", entry.getKey());
-                    jsonObject.put("dst", entry.getValue());
+                    jsonObject.put("source", entry.getKey().toString());
+                    jsonObject.put("destination", entry.getValue().toString());
 
                     // Create REQUEST message
                     ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
