@@ -43,14 +43,22 @@ public class ConveyorAgent extends Agent {
             }
 
             // Arguments passed are in LayOutBuilderAgent createAgents-method
-            nick = args[0].toString();
-            hasWorkStation = Boolean.parseBoolean(args[1].toString());
+            //nick = args[0].toString();
+            hasWorkStation = Boolean.parseBoolean(args[0].toString());
 
-            neighbours = (HashSet<String>) args[2];
+            neighbours = (HashSet<String>) args[1];
 
-            workTime = Integer.parseInt(args[2].toString());
-            thruputTime = Integer.parseInt(args[3].toString());
-            timeOut = Integer.parseInt(args[4].toString());
+            HashMap<String, Integer> config_ = (HashMap<String, Integer>) args[2];
+
+            workTime = config_.get("workTime");
+            thruputTime = config_.get("throughputTime");
+            timeOut = config_.get("timeout");
+
+/*
+            workTime = Integer.parseInt(config_.get("workTime"));
+            thruputTime = Integer.parseInt(config_.get("workTime"));
+            timeOut = Integer.parseInt(config_.get("workTime")));
+            */
 
         } catch (Exception e) {
             System.out.print("Conveyor couldn't be created. Stack trace: ");

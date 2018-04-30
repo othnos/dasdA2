@@ -1,13 +1,11 @@
 package agents;
 
 //import com.sun.org.apache.xml.internal.resolver.Catalog;
-import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.wrapper.ControllerException;
 import jade.wrapper.StaleProxyException;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -26,13 +24,16 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
-
 
 
 public class LayOutBuilderAgent extends Agent {
 
     private HashMap<String, Conveyor> layout = new HashMap<>();
+
+    /**
+     * Path GUI
+     */
+    private PathGui pathGUI;
 
     private class Conveyor{
         private String nick_;
@@ -215,12 +216,18 @@ public class LayOutBuilderAgent extends Agent {
 
     protected void setup() {
         System.out.println("Hello. My name is " + getLocalName());
+
+        // Create and show the GUI
+        pathGUI = new PathGui(this);
+        pathGUI.showGui();
+
         try {
             read();
             createAgents();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         addBehaviour(new CyclicBehaviour() {
             public void action() {
                 ACLMessage msgRx = receive();

@@ -9,11 +9,17 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.HashMap;
 
 public class PathGui extends JFrame {
     private Agent myAgent;
 
     private JTextField titleField;
+
+    /**
+     * Message queue
+     */
+    private HashMap<String, String> messageQueue = new HashMap<>();
 
     PathGui(Agent a) {
         super(a.getLocalName());
