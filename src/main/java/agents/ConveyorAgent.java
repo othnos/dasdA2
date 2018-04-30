@@ -32,6 +32,8 @@ public class ConveyorAgent extends Agent {
     private JSONObject targets;
 
     protected void setup() {
+        conveyorStatus = 0;
+        neighbours = new HashSet<String>();
         try {
             // Get constructing arguments from ContainerController's
             // createNewAgent-method
@@ -68,8 +70,6 @@ public class ConveyorAgent extends Agent {
             this.doDelete();
         }
 
-        conveyorStatus = 0;
-        neighbours = new HashSet<String>();
 
         addBehaviour(new ReceiveRequest(this));
         addBehaviour(new ReceiveAccept(this));
@@ -98,7 +98,7 @@ public class ConveyorAgent extends Agent {
         //assigned on the next conveyor again. Leaves(?) soruce and destination.
         public void onStart() {
             cont = false;
-            target = (AID)targets.get(myAgent.getLocalName());
+            target = new AID(targets.get(myAgent.getLocalName()).toString(), AID.ISLOCALNAME);
             stripdRoute = (JSONArray) targets.get("paths");
             stripdRoute.clear();
         }
@@ -111,7 +111,7 @@ public class ConveyorAgent extends Agent {
                 //wait for thruput time
             }
             ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
-            req.addReceiver((AID)target);
+            req.addReceiver(target);
             try {
                 req.setContentObject(stripdRoute.toString());
             } catch (IOException e) {
@@ -141,56 +141,89 @@ public class ConveyorAgent extends Agent {
 
         public void action() {
 
+            JSONArray it2 = (JSONArray) route.get("paths");
 
-            if (myAgent.getLocalName() == route.get("source")){
+            if(it2 == null){
+                it2 = new JSONArray();
+                route.put("paths", it2);
+            }
+            boolean isLoop = false;
+            int i = 0;
+            for(Object instance: it2){
+                if(instance.toString().equals(route.get("source").toString())) {
+                    ++i;
+                    if(i == 2) {
+                        isLoop = true;
+                        break;
+                    }
+                }
+
+            }
+
+
+            if (isLoop){//myAgent.getLocalName().equals(route.get("source").toString()) /*== route.get("source")*/){
+                System.out.println("source found");
                 ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
-                req.addReceiver((AID)route.get("source"));
+                req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
                 myAgent.send(req);
             }
 
             //sends the route to the original source if no neighbours
             else if(neighbours.isEmpty()){
+                System.out.println("no neighbours");
                 ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
-                req.addReceiver((AID)route.get("source"));
+                req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
                 myAgent.send(req);
             }
 
             else {
+                System.out.println("orElse");
                 boolean found = false;
+                try {
+                    for (String neighbour : neighbours) {
 
-                for (String neighbour : neighbours) {
-
-                    //handle the "found destination"
-                    if (neighbour.equals(route.get("destination").toString())) {
-                        found = true;
-                        ACLMessage req = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
-                        req.addReceiver((AID)route.get("source"));
-                        try {
-                            req.setContentObject(route.toString());
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                        //handle the "found destination"
+                        if (neighbour.equals(route.get("destination").toString())) {
+                            found = true;
+                            ACLMessage req = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+                            req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
+                            try {
+                                req.setContent(route.toJSONString());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            myAgent.send(req);
                         }
-                        myAgent.send(req);
+                    }
+
+                    if (!found) {
+                        /*JSONArray */it2 = (JSONArray) route.get("paths");
+
+                        if(it2 == null){
+                            it2 = new JSONArray();
+                            route.put("paths", it2);
+                        }
+                        //route.put("path", this.name);
+                        it2.add(myAgent.getLocalName());
+
+                        for (String neighbour : neighbours) {
+                            ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+
+                            //adds he neighbour as receiver of the message
+                            req.addReceiver(getAID(neighbour));
+                            try {
+                                //req.setContentObject(route.toString());
+
+                                req.setContent(route.toJSONString());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            myAgent.send(req);
+                        }
                     }
                 }
-
-                if (!found) {
-                    JSONArray it2 = (JSONArray) route.get("paths");
-                    //route.put("path", this.name);
-                    it2.add(myAgent.getLocalName());
-
-                    for (String neighbour : neighbours) {
-                        ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
-
-                        //adds he neighbour as receiver of the message
-                        req.addReceiver(getAID(neighbour));
-                        try {
-                            req.setContentObject(route.toString());
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        myAgent.send(req);
-                    }
+                catch (Exception e){
+                    e.printStackTrace();
                 }
             }
         }
@@ -210,6 +243,7 @@ public class ConveyorAgent extends Agent {
             ACLMessage msg = myAgent.receive(mt);
             if (msg != null) {
                 try {
+                    System.out.println(msg.getContent());
                     JSONObject route_ = (JSONObject) parser.parse(msg.getContent());
                     addBehaviour(new jsonMessage(route_));
                 } catch (ParseException e) {
