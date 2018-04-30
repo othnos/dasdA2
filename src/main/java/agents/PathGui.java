@@ -20,7 +20,7 @@ public class PathGui extends JFrame {
     /**
      * Message queue
      */
-    private HashMap<AID, AID> messageQueue = new HashMap<>();
+    private HashMap<String, String> messageQueue = new HashMap<>();
 
     PathGui(Agent a) {
         super(a.getLocalName());
@@ -46,21 +46,8 @@ public class PathGui extends JFrame {
                 String src = srcField.getText().trim();
                 String dest = destField.getText().trim();
 
-                // Throws error if agent not found
-                try {
-                    myAgent.getContainerController().getAgent(src);
-                    myAgent.getContainerController().getAgent(dest);
-                } catch (Exception e) {
-                    System.out.println("Source " + src + " or destination " + dest +
-                            " not found");
-                    return;
-                }
-
                 // Push source/destination AID pair to the messageQueue to send
-                messageQueue.put(
-                    new AID(src, AID.ISLOCALNAME),
-                    new AID(dest, AID.ISLOCALNAME)
-                );
+                messageQueue.put(src, dest);
 
                 System.out.println("Message queue: " + messageQueue);
 
@@ -75,23 +62,28 @@ public class PathGui extends JFrame {
 
         JButton sendButton = new JButton("Search shortest path");
         sendButton.addActionListener(ev -> {
-            for (Map.Entry<AID, AID> entry : messageQueue.entrySet()) {
+            for (Map.Entry<String, String> entry : messageQueue.entrySet()) {
                 try {
+                    // Throws error if agent not found
+                    myAgent.getContainerController().getAgent(entry.getKey());
+                    myAgent.getContainerController().getAgent(entry.getValue());
+
                     // Messages to the agents needs to be in JSON format
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("action", "get-shortest-path");
-                    jsonObject.put("source", entry.getKey().toString());
-                    jsonObject.put("destination", entry.getValue().toString());
+                    jsonObject.put("source", entry.getKey());
+                    jsonObject.put("destination", entry.getValue());
 
                     // Create REQUEST message
                     ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-                    msg.addReceiver(entry.getKey());
+                    msg.addReceiver(new AID(entry.getKey(), AID.ISLOCALNAME));
                     // Convert JSON Object to string
                     msg.setContent(jsonObject.toJSONString());
 
                     myAgent.send(msg);
                 } catch (Exception e) {
-                    JOptionPane.showMessageDialog(PathGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    e.printStackTrace();
+                    //JOptionPane.showMessageDialog(PathGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
