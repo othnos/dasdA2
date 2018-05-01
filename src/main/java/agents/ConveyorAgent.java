@@ -81,6 +81,7 @@ public class ConveyorAgent extends Agent {
         private AID target;
         private JSONArray stripdRoute;
 
+
         private movingStuff(){
 
         }
@@ -89,13 +90,20 @@ public class ConveyorAgent extends Agent {
             protected void onTick(){
                 ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
                 req.addReceiver(target);
+                JSONObject routet = new JSONObject();
                 try {
-                    req.setContent(stripdRoute.toString());
+
+                    routet.put("source", target.getLocalName());
+                    int i = stripdRoute.size();
+                    routet.put("destination", stripdRoute.get(i-1));
+                    req.setContent(routet.toJSONString());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                System.out.println(routet.toJSONString());
                 myAgent.send(req);
                 System.out.println("Pallet moved to next conveyor.");
+                shortestpath.clear();
 
             }
         };
@@ -123,7 +131,8 @@ public class ConveyorAgent extends Agent {
             target = new AID(shortestpath.get(0).toString(), AID.ISLOCALNAME);
             stripdRoute = shortestpath;
             System.out.println("shortest path is:" + shortestpath);
-            shortestpath.clear();
+
+
         }
 
         public void action() {
@@ -203,6 +212,7 @@ public class ConveyorAgent extends Agent {
                             }
                             //route.put("path", this.name);
                             it2.add(myAgent.getLocalName());
+                            it2.add(route.get("destination"));
                             ACLMessage req = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
                             req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
                             try {
@@ -276,7 +286,6 @@ public class ConveyorAgent extends Agent {
         JSONParser parser = new JSONParser();
         private ReceiveAccept(Agent a){
             super(a);
-
         }
         Behaviour decider = new TickerBehaviour(myAgent, timeOut){
             protected void onTick(){
