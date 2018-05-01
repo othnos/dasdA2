@@ -1,6 +1,7 @@
 package agents;
 
 import FIPA.AgentID;
+import helpers.MessageRouter;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.*;
@@ -30,6 +31,7 @@ public class ConveyorAgent extends Agent {
     private int thruputTime;
     private int timeOut;
     private JSONArray shortestpath;
+    private JSONParser jsonParser = new JSONParser();
 
     protected void setup() {
         conveyorStatus = 0;
@@ -65,9 +67,10 @@ public class ConveyorAgent extends Agent {
             this.doDelete();
         }
 
-        addBehaviour(new ReceiveRequest(this));
-        addBehaviour(new ReceiveAccept(this));
-        addBehaviour(new ReceiveRefuse(this));
+        addBehaviour(new RequestRouter(jsonParser, this));
+        //addBehaviour(new ReceiveRequest(this));
+        //addBehaviour(new ReceiveAccept(this));
+        //addBehaviour(new ReceiveRefuse(this));
 
     }
 
@@ -87,7 +90,7 @@ public class ConveyorAgent extends Agent {
                 req.addReceiver(target);
                 JSONObject routet = new JSONObject();
                 try {
-
+                    routet.put("action", "get-shortest-path");
                     routet.put("source", target.getLocalName());
                     int i = stripdRoute.size();
                     routet.put("destination", stripdRoute.get(i-1));
@@ -97,9 +100,11 @@ public class ConveyorAgent extends Agent {
                 }
                 System.out.println(routet.toJSONString());
                 myAgent.send(req);
-                System.out.println("Pallet moved to next conveyor.");
-                shortestpath.clear();
-                System.out.println(shortestpath);
+                System.out.println("Agent " + getLocalName() + " moved the pallet to the " +
+                        "next conveyor with route " + stripdRoute);
+                //System.out.println("Pallet moved to next conveyor.");
+                //shortestpath.clear();
+                //System.out.println(shortestpath);
 
             }
         };
@@ -115,7 +120,7 @@ public class ConveyorAgent extends Agent {
                     e.printStackTrace();
                 }
                 myAgent.send(req);
-                System.out.println("Pallet has been worked on.");
+                //System.out.println("Pallet has been worked on.");
 
             }
         };
@@ -123,12 +128,10 @@ public class ConveyorAgent extends Agent {
         //startup sets the target agent from the jsonobject targets and strips it from the path which gets
         //assigned on the next conveyor again. Leaves(?) soruce and destination.
         public void onStart() {
-
+            //System.out.println("Shortest path (130): " + shortestpath.toString());
             target = new AID(shortestpath.get(1).toString(), AID.ISLOCALNAME);
             stripdRoute = shortestpath;
             System.out.println("shortest path is:" + shortestpath);
-
-
         }
 
         public void action() {
@@ -177,7 +180,7 @@ public class ConveyorAgent extends Agent {
 
 
             if (isLoop){//myAgent.getLocalName().equals(route.get("source").toString()) /*== route.get("source")*/){
-                System.out.println("source found");
+                //System.out.println("source found");
                 ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
                 req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
                 myAgent.send(req);
@@ -192,7 +195,7 @@ public class ConveyorAgent extends Agent {
             }
 
             else {
-                System.out.println("orElse");
+                //System.out.println("orElse");
                 boolean found = false;
                 try {
                     for (String neighbour : neighbours) {
@@ -209,7 +212,9 @@ public class ConveyorAgent extends Agent {
                             //route.put("path", this.name);
                             it2.add(myAgent.getLocalName());
                             it2.add(route.get("destination"));
-                            ACLMessage req = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+                            //ACLMessage req = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+                            ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+                            route.replace("action", "receiveAccept");
                             req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
                             try {
                                 req.setContent(route.toJSONString());
@@ -277,27 +282,39 @@ public class ConveyorAgent extends Agent {
         }
     }
     //for acquiring possible paths for the workpiece
-    private class ReceiveAccept extends CyclicBehaviour{
+    private class ReceiveAccept extends Behaviour{
         private MessageTemplate mt2 = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
         JSONParser parser = new JSONParser();
-        //Boolean running = false;
-        private ReceiveAccept(Agent a){
+        Boolean running = false;
+        JSONObject route_;
+        private ReceiveAccept(Agent a, JSONObject route){
             super(a);
+            route_ = route;
         }
         Behaviour decider = new WakerBehaviour(myAgent, timeOut){
             protected void onWake(){
+                System.out.println("Decider wakes (293)");
                 //decide target
                 addBehaviour(new movingStuff());
-                //running = false;
+                running = false;
             }
         };
         public void onStart() {
-            //if (!running) {
+            if (!running) {
                 addBehaviour(decider);
-            //}
-            //running = true;
+            }
+            running = true;
         }
         public void action() {
+            if(shortestpath == null){
+                shortestpath = (JSONArray) route_.get("paths");
+            }
+            JSONArray it2 = (JSONArray) route_.get("paths");
+            if(it2.size() < shortestpath.size()){
+                shortestpath = (JSONArray) route_.get("paths");
+            }
+
+            /*
             ACLMessage msg = myAgent.receive(mt2);
             if (msg != null) {
 
@@ -320,6 +337,12 @@ public class ConveyorAgent extends Agent {
             else {
                 block();
             }
+            */
+        }
+
+        @Override
+        public boolean done() {
+            return true;
         }
     }
 
@@ -360,6 +383,85 @@ public class ConveyorAgent extends Agent {
 
     public void setConveyorStatus(int status){
         conveyorStatus = status;
+    }
+
+    /**
+     * Router for ACLMessage.REQUEST messages
+     */
+    class RequestRouter extends MessageRouter {
+        /**
+         * Constructor
+         */
+        private RequestRouter(JSONParser jsonParser, Agent agent) {
+            // Access only ACLMessage.REQUEST from message queue
+            super(
+                    MessageTemplate.MatchPerformative(ACLMessage.REQUEST),
+                    jsonParser,
+                    agent
+            );
+        }
+
+        /**
+         *
+         * @param data
+         * @throws Exception
+         */
+        public void route(JSONObject data) throws Exception {
+            String action = getAction(data);
+
+            //System.out.println(data.toString());
+
+            switch (action) {
+                case "get-shortest-path":
+                    addBehaviour(new jsonMessage(data));
+                    break;
+                case "receiveAccept":
+                    routeFinder.addRoute(data);
+                    //addBehaviour(new ReceiveAccept(agent, data));
+                    break;
+                default:
+                    throw new Exception("Action not found.");
+            }
+        }
+    }
+
+    RouteFinder routeFinder = new RouteFinder(this);
+
+    class RouteFinder {
+        boolean running = false;
+        Agent myAgent;
+        Behaviour decider;
+
+        RouteFinder(Agent a) {
+            myAgent = a;
+        }
+
+        void addRoute(JSONObject route) {
+            //System.out.println("Added route");
+            if(shortestpath == null){
+                shortestpath = (JSONArray) route.get("paths");
+            }
+            JSONArray it2 = (JSONArray) route.get("paths");
+            if(it2.size() < shortestpath.size()){
+                shortestpath = (JSONArray) route.get("paths");
+            }
+
+            if (running) {
+                return;
+            }
+
+            running = true;
+
+            decider = new WakerBehaviour(myAgent, timeOut){
+                protected void onWake(){
+                    System.out.println("Decider wakes (293)");
+                    //decide target
+                    addBehaviour(new movingStuff());
+                    running = false;
+                }
+            };
+            addBehaviour(decider);
+        }
     }
 }
 

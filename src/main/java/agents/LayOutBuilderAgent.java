@@ -1,6 +1,7 @@
 package agents;
 
 //import com.sun.org.apache.xml.internal.resolver.Catalog;
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
@@ -164,9 +165,9 @@ public class LayOutBuilderAgent extends Agent {
                 );
 
             for (String piece: items) {
-                System.out.print(piece + " ");
+                //System.out.print(piece + " ");
             }
-            System.out.println();
+            //System.out.println();
         }
 
 
@@ -205,17 +206,20 @@ public class LayOutBuilderAgent extends Agent {
 
             layout.get(items[0]).addNeighbour(items[1]);
         }
-        for (String cnv: layout.keySet()){
-            System.out.print(cnv + " has neighbours ");
-            for (String instance: layout.get(cnv).getNeighbours()){
-                System.out.print(instance + " ");
+
+        if (false) {
+            for (String cnv : layout.keySet()) {
+                System.out.print(cnv + " has neighbours ");
+                for (String instance : layout.get(cnv).getNeighbours()) {
+                    System.out.print(instance + " ");
+                }
+                System.out.println();
             }
-            System.out.println();
         }
     }
 
     protected void setup() {
-        System.out.println("Hello. My name is " + getLocalName());
+        //System.out.println("Hello. My name is " + getLocalName());
 
         // Create and show the GUI
         pathGUI = new PathGui(this);
@@ -241,6 +245,24 @@ public class LayOutBuilderAgent extends Agent {
                 }
             }
         });
+
+        sendMsg();
+    }
+
+    private void sendMsg() {
+        // Messages to the agents needs to be in JSON format
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("action", "get-shortest-path");
+        jsonObject.put("source", "cnv_1");
+        jsonObject.put("destination", "cnv_10");
+
+        // Create REQUEST message
+        ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+        msg.addReceiver(new AID("cnv_1", AID.ISLOCALNAME));
+        // Convert JSON Object to string
+        msg.setContent(jsonObject.toJSONString());
+
+        this.send(msg);
     }
 }
 
