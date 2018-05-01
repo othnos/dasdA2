@@ -413,6 +413,21 @@ public class ConveyorAgent extends Agent {
 
             switch (action) {
                 case "get-shortest-path":
+                    // GUI can ask for shortest path with this action
+                    // TODO: Put the on wake behaviour here
+                    addBehaviour(
+                        new WakerBehaviour(myAgent, timeOut){
+                            protected void onWake(){
+                                System.out.println("Decider wakes (293)");
+                                //decide target
+                                addBehaviour(new movingStuff());
+                            }
+                    });
+                    // Change action to find-shortest-path
+                    data.replace("action", "find-shortest-path");
+                case "find-shortest-path":
+                    // Populates message to neighbours or if destination found
+                    // send the route to the source conveyor
                     addBehaviour(new jsonMessage(data));
                     break;
                 case "receiveAccept":
@@ -452,6 +467,7 @@ public class ConveyorAgent extends Agent {
 
             running = true;
 
+            /*
             decider = new WakerBehaviour(myAgent, timeOut){
                 protected void onWake(){
                     System.out.println("Decider wakes (293)");
@@ -461,6 +477,7 @@ public class ConveyorAgent extends Agent {
                 }
             };
             addBehaviour(decider);
+            */
         }
     }
 }
