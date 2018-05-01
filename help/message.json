@@ -1,0 +1,9 @@
+{
+  "action": "get-shortest-path",
+  "source": "cnv_1",
+  "destination": "cnv_10",
+  "paths": [
+    "cnv_3",
+    "cnv_4"
+  ]
+}
