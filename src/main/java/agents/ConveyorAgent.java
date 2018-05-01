@@ -55,12 +55,7 @@ public class ConveyorAgent extends Agent {
             workTime = config_.get("workTime");
             thruputTime = config_.get("throughputTime");
             timeOut = config_.get("timeout");
-
-/*
-            workTime = Integer.parseInt(config_.get("workTime"));
-            thruputTime = Integer.parseInt(config_.get("workTime"));
-            timeOut = Integer.parseInt(config_.get("workTime")));
-            */
+            
 
         } catch (Exception e) {
             System.out.print("Conveyor couldn't be created. Stack trace: ");
@@ -86,8 +81,8 @@ public class ConveyorAgent extends Agent {
 
         }
         //ticker behaviour for the thruput time simulation
-        Behaviour thruPut = new TickerBehaviour(myAgent, thruputTime){
-            protected void onTick(){
+        Behaviour thruPut = new WakerBehaviour(myAgent, thruputTime){
+            protected void onWake(){
                 ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
                 req.addReceiver(target);
                 JSONObject routet = new JSONObject();
@@ -104,12 +99,13 @@ public class ConveyorAgent extends Agent {
                 myAgent.send(req);
                 System.out.println("Pallet moved to next conveyor.");
                 shortestpath.clear();
+                System.out.println(shortestpath);
 
             }
         };
 
-        Behaviour working = new TickerBehaviour(myAgent, workTime){
-            protected void onTick(){
+        Behaviour working = new WakerBehaviour(myAgent, workTime){
+            protected void onWake(){
 
                 ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
                 req.addReceiver(target);
@@ -128,7 +124,7 @@ public class ConveyorAgent extends Agent {
         //assigned on the next conveyor again. Leaves(?) soruce and destination.
         public void onStart() {
 
-            target = new AID(shortestpath.get(0).toString(), AID.ISLOCALNAME);
+            target = new AID(shortestpath.get(1).toString(), AID.ISLOCALNAME);
             stripdRoute = shortestpath;
             System.out.println("shortest path is:" + shortestpath);
 
@@ -284,22 +280,27 @@ public class ConveyorAgent extends Agent {
     private class ReceiveAccept extends CyclicBehaviour{
         private MessageTemplate mt2 = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
         JSONParser parser = new JSONParser();
+        //Boolean running = false;
         private ReceiveAccept(Agent a){
             super(a);
         }
-        Behaviour decider = new TickerBehaviour(myAgent, timeOut){
-            protected void onTick(){
+        Behaviour decider = new WakerBehaviour(myAgent, timeOut){
+            protected void onWake(){
                 //decide target
                 addBehaviour(new movingStuff());
+                //running = false;
             }
         };
         public void onStart() {
-
+            //if (!running) {
+                addBehaviour(decider);
+            //}
+            //running = true;
         }
         public void action() {
             ACLMessage msg = myAgent.receive(mt2);
             if (msg != null) {
-                addBehaviour( decider );
+
                 try {
                     JSONObject route_ = (JSONObject) parser.parse(msg.getContent());
                     if(shortestpath == null){
@@ -335,7 +336,7 @@ public class ConveyorAgent extends Agent {
                 //refuse message
 
                 // TODO: This reply message is for testing purposes only
-                System.out.println("Tulostuuko tämä viesti?");
+                //System.out.println("Tulostuuko tämä viesti?");
 
                 ACLMessage reply = msg.createReply();
                 reply.setPerformative(ACLMessage.INFORM);
