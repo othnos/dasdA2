@@ -90,8 +90,8 @@ public class ConveyorAgent extends Agent {
                 ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
                 req.addReceiver(target);
                 try {
-                    req.setContentObject(stripdRoute.toString());
-                } catch (IOException e) {
+                    req.setContent(stripdRoute.toString());
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
                 myAgent.send(req);
@@ -106,8 +106,8 @@ public class ConveyorAgent extends Agent {
                 ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
                 req.addReceiver(target);
                 try {
-                    req.setContentObject(stripdRoute.toString());
-                } catch (IOException e) {
+                    req.setContent(stripdRoute.toString());
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
                 myAgent.send(req);
@@ -122,6 +122,7 @@ public class ConveyorAgent extends Agent {
 
             target = new AID(shortestpath.get(0).toString(), AID.ISLOCALNAME);
             stripdRoute = shortestpath;
+            System.out.println("shortest path is:" + shortestpath);
             shortestpath.clear();
         }
 
@@ -194,6 +195,14 @@ public class ConveyorAgent extends Agent {
                         //handle the "found destination"
                         if (neighbour.equals(route.get("destination").toString())) {
                             found = true;
+                            /*JSONArray */it2 = (JSONArray) route.get("paths");
+
+                            if(it2 == null){
+                                it2 = new JSONArray();
+                                route.put("paths", it2);
+                            }
+                            //route.put("path", this.name);
+                            it2.add(myAgent.getLocalName());
                             ACLMessage req = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
                             req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
                             try {
@@ -276,7 +285,7 @@ public class ConveyorAgent extends Agent {
             }
         };
         public void onStart() {
-            addBehaviour(decider);
+
         }
         public void action() {
             ACLMessage msg = myAgent.receive(mt2);
@@ -284,12 +293,12 @@ public class ConveyorAgent extends Agent {
                 addBehaviour( decider );
                 try {
                     JSONObject route_ = (JSONObject) parser.parse(msg.getContent());
-                    if(shortestpath.isEmpty()){
+                    if(shortestpath == null){
                         shortestpath = (JSONArray) route_.get("paths");
                     }
                     JSONArray it2 = (JSONArray) route_.get("paths");
-                    if(it2.size()<shortestpath.size()){
-                        shortestpath =(JSONArray) route_.get("paths");
+                    if(it2.size() < shortestpath.size()){
+                        shortestpath = (JSONArray) route_.get("paths");
                     }
 
                 }
