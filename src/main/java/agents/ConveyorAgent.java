@@ -70,18 +70,15 @@ public class ConveyorAgent extends Agent {
             this.doDelete();
         }
 
-
         addBehaviour(new ReceiveRequest(this));
         addBehaviour(new ReceiveAccept(this));
         addBehaviour(new ReceiveRefuse(this));
 
     }
 
-
     //behaviour to play with the workpieces
     private class movingStuff extends Behaviour{
         private AID target;
-        private boolean cont;
         private JSONArray stripdRoute;
 
         private movingStuff(){
@@ -90,34 +87,46 @@ public class ConveyorAgent extends Agent {
         //ticker behaviour for the thruput time simulation
         Behaviour thruPut = new TickerBehaviour(myAgent, thruputTime){
             protected void onTick(){
-                cont = true;
+                ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+                req.addReceiver(target);
+                try {
+                    req.setContentObject(stripdRoute.toString());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                myAgent.send(req);
+                System.out.println("Pallet moved to next conveyor.");
+
+            }
+        };
+
+        Behaviour working = new TickerBehaviour(myAgent, workTime){
+            protected void onTick(){
+
+                ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+                req.addReceiver(target);
+                try {
+                    req.setContentObject(stripdRoute.toString());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                myAgent.send(req);
+                System.out.println("Pallet has been worked on.");
+
             }
         };
 
         //startup sets the target agent from the jsonobject targets and strips it from the path which gets
         //assigned on the next conveyor again. Leaves(?) soruce and destination.
         public void onStart() {
-            cont = false;
-            target = new AID(shortestpath.get(myAgent.getLocalName()).toString(), AID.ISLOCALNAME);
+
+            target = new AID(shortestpath.get(0).toString(), AID.ISLOCALNAME);
             stripdRoute = shortestpath;
             shortestpath.clear();
         }
 
         public void action() {
             addBehaviour(thruPut);
-
-            //waits for the tikcer behaviour
-            while (!cont){
-                //wait for thruput time
-            }
-            ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
-            req.addReceiver(target);
-            try {
-                req.setContentObject(stripdRoute.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            myAgent.send(req);;
 
         }
         public boolean done() {
@@ -260,12 +269,15 @@ public class ConveyorAgent extends Agent {
             super(a);
 
         }
-        Behaviour decider = new TickerBehaviour(myAgent, 10000){
+        Behaviour decider = new TickerBehaviour(myAgent, timeOut){
             protected void onTick(){
                 //decide target
                 addBehaviour(new movingStuff());
             }
         };
+        public void onStart() {
+            addBehaviour(decider);
+        }
         public void action() {
             ACLMessage msg = myAgent.receive(mt2);
             if (msg != null) {
