@@ -186,6 +186,13 @@ public class ConveyorAgent extends Agent {
                 myAgent.send(req);
             }
 
+            else if(route.get("source").toString().equals(route.get("destination").toString()) ){
+                System.out.println("Arrived to destination.");
+                ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
+                req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
+                myAgent.send(req);
+            }
+
             //sends the route to the original source if no neighbours
             else if(neighbours.isEmpty()){
                 System.out.println("no neighbours");
