@@ -29,7 +29,7 @@ public class ConveyorAgent extends Agent {
     private int workTime;
     private int thruputTime;
     private int timeOut;
-    private JSONObject shortestpath;
+    private JSONArray shortestpath;
 
     protected void setup() {
         conveyorStatus = 0;
@@ -99,8 +99,8 @@ public class ConveyorAgent extends Agent {
         public void onStart() {
             cont = false;
             target = new AID(shortestpath.get(myAgent.getLocalName()).toString(), AID.ISLOCALNAME);
-            stripdRoute = (JSONArray) shortestpath.get("paths");
-            stripdRoute.clear();
+            stripdRoute = shortestpath;
+            shortestpath.clear();
         }
 
         public void action() {
@@ -272,9 +272,12 @@ public class ConveyorAgent extends Agent {
                 addBehaviour( decider );
                 try {
                     JSONObject route_ = (JSONObject) parser.parse(msg.getContent());
-
-                    if(route_.size()<shortestpath.size()){
-                        shortestpath = route_;
+                    if(shortestpath.isEmpty()){
+                        shortestpath = (JSONArray) route_.get("paths");
+                    }
+                    JSONArray it2 = (JSONArray) route_.get("paths");
+                    if(it2.size()<shortestpath.size()){
+                        shortestpath =(JSONArray) route_.get("paths");
                     }
 
                 }
