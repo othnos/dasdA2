@@ -246,7 +246,7 @@ public class LayOutBuilderAgent extends Agent {
             }
         });
 
-        sendMsg();
+        //sendMsg();
     }
 
     private void sendMsg() {

@@ -47,7 +47,6 @@ public class ConveyorAgent extends Agent {
             }
 
             // Arguments passed are in LayOutBuilderAgent createAgents-method
-            //nick = args[0].toString();
             hasWorkStation = Boolean.parseBoolean(args[0].toString());
 
             neighbours = (HashSet<String>) args[1];
@@ -68,10 +67,6 @@ public class ConveyorAgent extends Agent {
         }
 
         addBehaviour(new RequestRouter(jsonParser, this));
-        //addBehaviour(new ReceiveRequest(this));
-        //addBehaviour(new ReceiveAccept(this));
-        //addBehaviour(new ReceiveRefuse(this));
-
     }
 
     //behaviour to play with the workpieces
@@ -102,10 +97,6 @@ public class ConveyorAgent extends Agent {
                 myAgent.send(req);
                 System.out.println("Agent " + getLocalName() + " moved the pallet to the " +
                         "next conveyor with route " + stripdRoute);
-                //System.out.println("Pallet moved to next conveyor.");
-                //shortestpath.clear();
-                //System.out.println(shortestpath);
-
             }
         };
 
@@ -120,21 +111,23 @@ public class ConveyorAgent extends Agent {
                     e.printStackTrace();
                 }
                 myAgent.send(req);
-                //System.out.println("Pallet has been worked on.");
-
             }
         };
 
         //startup sets the target agent from the jsonobject targets and strips it from the path which gets
         //assigned on the next conveyor again. Leaves(?) soruce and destination.
         public void onStart() {
-            //System.out.println("Shortest path (130): " + shortestpath.toString());
-            target = new AID(shortestpath.get(1).toString(), AID.ISLOCALNAME);
-            stripdRoute = shortestpath;
-            System.out.println("shortest path is:" + shortestpath);
         }
 
         public void action() {
+
+            if(shortestpath == null){
+                System.out.println("Path does not exist");
+                return;
+            }
+            target = new AID(shortestpath.get(1).toString(), AID.ISLOCALNAME);
+            stripdRoute = shortestpath;
+            System.out.println("shortest path is:" + shortestpath);
             addBehaviour(thruPut);
 
         }
@@ -179,15 +172,7 @@ public class ConveyorAgent extends Agent {
             }
 
 
-            if (isLoop){//myAgent.getLocalName().equals(route.get("source").toString()) /*== route.get("source")*/){
-                //System.out.println("source found");
-                ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
-                req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
-                myAgent.send(req);
-            }
-
-            else if(route.get("source").toString().equals(route.get("destination").toString()) ){
-                System.out.println("Arrived to destination.");
+            if (isLoop){
                 ACLMessage req = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
                 req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
                 myAgent.send(req);
@@ -202,7 +187,6 @@ public class ConveyorAgent extends Agent {
             }
 
             else {
-                //System.out.println("orElse");
                 boolean found = false;
                 try {
                     for (String neighbour : neighbours) {
@@ -210,16 +194,14 @@ public class ConveyorAgent extends Agent {
                         //handle the "found destination"
                         if (neighbour.equals(route.get("destination").toString())) {
                             found = true;
-                            /*JSONArray */it2 = (JSONArray) route.get("paths");
+                            it2 = (JSONArray) route.get("paths");
 
                             if(it2 == null){
                                 it2 = new JSONArray();
                                 route.put("paths", it2);
                             }
-                            //route.put("path", this.name);
                             it2.add(myAgent.getLocalName());
                             it2.add(route.get("destination"));
-                            //ACLMessage req = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
                             ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
                             route.replace("action", "receiveAccept");
                             req.addReceiver(new AID(route.get("source").toString(), AID.ISLOCALNAME));
@@ -233,13 +215,12 @@ public class ConveyorAgent extends Agent {
                     }
 
                     if (!found) {
-                        /*JSONArray */it2 = (JSONArray) route.get("paths");
+                        it2 = (JSONArray) route.get("paths");
 
                         if(it2 == null){
                             it2 = new JSONArray();
                             route.put("paths", it2);
                         }
-                        //route.put("path", this.name);
                         it2.add(myAgent.getLocalName());
 
                         for (String neighbour : neighbours) {
@@ -248,8 +229,6 @@ public class ConveyorAgent extends Agent {
                             //adds he neighbour as receiver of the message
                             req.addReceiver(getAID(neighbour));
                             try {
-                                //req.setContentObject(route.toString());
-
                                 req.setContent(route.toJSONString());
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -268,119 +247,7 @@ public class ConveyorAgent extends Agent {
         }
     }
 
-    //for acquiring messages of JSON to be checked
-    private class ReceiveRequest extends CyclicBehaviour {
-        private MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
-        JSONParser parser = new JSONParser();
-        private ReceiveRequest(Agent a) {
-            super(a);
-        }
-        public void action() {
-            ACLMessage msg = myAgent.receive(mt);
-            if (msg != null) {
-                try {
-                    System.out.println(msg.getContent());
-                    JSONObject route_ = (JSONObject) parser.parse(msg.getContent());
-                    addBehaviour(new jsonMessage(route_));
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-    //for acquiring possible paths for the workpiece
-    private class ReceiveAccept extends Behaviour{
-        private MessageTemplate mt2 = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
-        JSONParser parser = new JSONParser();
-        Boolean running = false;
-        JSONObject route_;
-        private ReceiveAccept(Agent a, JSONObject route){
-            super(a);
-            route_ = route;
-        }
-        Behaviour decider = new WakerBehaviour(myAgent, timeOut){
-            protected void onWake(){
-                System.out.println("Decider wakes (293)");
-                //decide target
-                addBehaviour(new movingStuff());
-                running = false;
-            }
-        };
-        public void onStart() {
-            if (!running) {
-                addBehaviour(decider);
-            }
-            running = true;
-        }
-        public void action() {
-            if(shortestpath == null){
-                shortestpath = (JSONArray) route_.get("paths");
-            }
-            JSONArray it2 = (JSONArray) route_.get("paths");
-            if(it2.size() < shortestpath.size()){
-                shortestpath = (JSONArray) route_.get("paths");
-            }
-
-            /*
-            ACLMessage msg = myAgent.receive(mt2);
-            if (msg != null) {
-
-                try {
-                    JSONObject route_ = (JSONObject) parser.parse(msg.getContent());
-                    if(shortestpath == null){
-                        shortestpath = (JSONArray) route_.get("paths");
-                    }
-                    JSONArray it2 = (JSONArray) route_.get("paths");
-                    if(it2.size() < shortestpath.size()){
-                        shortestpath = (JSONArray) route_.get("paths");
-                    }
-
-                }
-                catch (ParseException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            else {
-                block();
-            }
-            */
-        }
-
-        @Override
-        public boolean done() {
-            return true;
-        }
-    }
-
-    //for acquiring messages to be rejected
-    private class ReceiveRefuse extends CyclicBehaviour{
-        private MessageTemplate mt3 = MessageTemplate.MatchPerformative(ACLMessage.REJECT_PROPOSAL);
-        private ReceiveRefuse(Agent a) {
-            super(a);
-        }
-
-        public void action() {
-            ACLMessage msg = myAgent.receive(mt3);
-            if (msg != null) {
-                //refuse message
-
-                // TODO: This reply message is for testing purposes only
-                //System.out.println("Tulostuuko tämä viesti?");
-
-                ACLMessage reply = msg.createReply();
-                reply.setPerformative(ACLMessage.INFORM);
-                reply.setContent("pung");
-                send(reply);
-            }
-
-            else {
-                block();
-            }
-        }
-    }
-
-     public void addNeighbour(String neighbour){
+    public void addNeighbour(String neighbour){
         neighbours.add(neighbour);
     }
 
@@ -420,12 +287,14 @@ public class ConveyorAgent extends Agent {
 
             switch (action) {
                 case "get-shortest-path":
+                    if (check_ifDest(data)){
+                        return;
+                    }
                     // GUI can ask for shortest path with this action
                     // TODO: Put the on wake behaviour here
                     addBehaviour(
                         new WakerBehaviour(myAgent, timeOut){
                             protected void onWake(){
-                                System.out.println("Decider wakes (293)");
                                 //decide target
                                 addBehaviour(new movingStuff());
                             }
@@ -439,11 +308,19 @@ public class ConveyorAgent extends Agent {
                     break;
                 case "receiveAccept":
                     routeFinder.addRoute(data);
-                    //addBehaviour(new ReceiveAccept(agent, data));
                     break;
                 default:
                     throw new Exception("Action not found.");
             }
+        }
+
+        public boolean check_ifDest(JSONObject data) {
+            if (data.get("source").toString().equals(data.get("destination").toString())) {
+                System.out.println("Arrived to destination.");
+                return true;
+            }
+
+            return false;
         }
     }
 
@@ -473,18 +350,6 @@ public class ConveyorAgent extends Agent {
             }
 
             running = true;
-
-            /*
-            decider = new WakerBehaviour(myAgent, timeOut){
-                protected void onWake(){
-                    System.out.println("Decider wakes (293)");
-                    //decide target
-                    addBehaviour(new movingStuff());
-                    running = false;
-                }
-            };
-            addBehaviour(decider);
-            */
         }
     }
 }
