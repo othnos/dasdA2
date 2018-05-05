@@ -1,6 +1,7 @@
 package agents;
 
 //import com.sun.org.apache.xml.internal.resolver.Catalog;
+import helpers.PathGui;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;

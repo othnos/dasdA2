@@ -28,6 +28,11 @@ public abstract class MessageRouter extends CyclicBehaviour {
     protected Agent agent;
 
     /**
+     * Current message
+     */
+    protected ACLMessage msgRx;
+
+    /**
      * Constructor
      * @param mt_
      * @param jsonParser_
@@ -43,7 +48,7 @@ public abstract class MessageRouter extends CyclicBehaviour {
 
     @Override
     public void action() {
-        ACLMessage msgRx = agent.receive(mt);
+        msgRx = agent.receive(mt);
 
         // Block if not message received
         if (msgRx == null) {
@@ -52,7 +57,7 @@ public abstract class MessageRouter extends CyclicBehaviour {
         }
 
         try {
-            //System.out.println(msgRx.toString());
+            // System.out.println(msgRx.toString());
             JSONObject data = (JSONObject) jsonParser.parse(
                     msgRx.getContent()
             );

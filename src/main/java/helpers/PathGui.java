@@ -1,9 +1,8 @@
-package agents;
+package helpers;
 
 import jade.core.AID;
 import jade.core.Agent;
 import jade.lang.acl.ACLMessage;
-import org.json.simple.JSONObject;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,7 +21,7 @@ public class PathGui extends JFrame {
      */
     private HashMap<String, String> messageQueue = new HashMap<>();
 
-    PathGui(Agent a) {
+    public PathGui(Agent a) {
         super(a.getLocalName());
 
         myAgent = a;
@@ -96,17 +95,12 @@ public class PathGui extends JFrame {
                 myAgent.getContainerController().getAgent(entry.getKey());
                 myAgent.getContainerController().getAgent(entry.getValue());
 
-                // Messages to the agents needs to be in JSON format
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put("action", "get-shortest-path");
-                jsonObject.put("source", entry.getKey());
-                jsonObject.put("destination", entry.getValue());
+                PathFindingMessage pfm = new PathFindingMessage(entry.getKey(),
+                        entry.getValue(), "get-shortest-path");
 
-                // Create REQUEST message
                 ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
                 msg.addReceiver(new AID(entry.getKey(), AID.ISLOCALNAME));
-                // Convert JSON Object to string
-                msg.setContent(jsonObject.toJSONString());
+                msg.setContent(pfm.getAsJSONObject().toJSONString());
 
                 myAgent.send(msg);
             } catch (Exception e) {
