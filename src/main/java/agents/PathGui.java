@@ -40,53 +40,12 @@ public class PathGui extends JFrame {
         getContentPane().add(p, BorderLayout.CENTER);
 
         JButton addButton = new JButton("Add msg");
-        addButton.addActionListener(ev -> {
-            try {
-                // Get agent's local name
-                String src = srcField.getText().trim();
-                String dest = destField.getText().trim();
-
-                // Push source/destination AID pair to the messageQueue to send
-                messageQueue.put(src, dest);
-
-                System.out.println("Message queue: " + messageQueue);
-
-                //System.out.println("Src: " + src + ", Dst: " + dest + " added to " +
-                //        "message queue");
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(PathGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
+        addButton.addActionListener(ev -> addMessageToQueue());
         p = new JPanel();
         p.add(addButton);
 
         JButton sendButton = new JButton("Search shortest path");
-        sendButton.addActionListener(ev -> {
-            for (Map.Entry<String, String> entry : messageQueue.entrySet()) {
-                try {
-                    // Throws error if agent not found
-                    myAgent.getContainerController().getAgent(entry.getKey());
-                    myAgent.getContainerController().getAgent(entry.getValue());
-
-                    // Messages to the agents needs to be in JSON format
-                    JSONObject jsonObject = new JSONObject();
-                    jsonObject.put("action", "get-shortest-path");
-                    jsonObject.put("source", entry.getKey());
-                    jsonObject.put("destination", entry.getValue());
-
-                    // Create REQUEST message
-                    ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-                    msg.addReceiver(new AID(entry.getKey(), AID.ISLOCALNAME));
-                    // Convert JSON Object to string
-                    msg.setContent(jsonObject.toJSONString());
-
-                    myAgent.send(msg);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    //JOptionPane.showMessageDialog(PathGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
+        sendButton.addActionListener(ev -> findShortestPath());
         p.add(sendButton);
 
         getContentPane().add(p, BorderLayout.SOUTH);
@@ -100,6 +59,64 @@ public class PathGui extends JFrame {
         } );
 
         setResizable(false);
+    }
+
+    /**
+     * Add message to the message queue for waiting to send
+     */
+    private void addMessageToQueue() {
+        try {
+            // Get agent's local name
+            String src = srcField.getText().trim();
+            String dest = destField.getText().trim();
+
+            // Throws error if agent not found
+            myAgent.getContainerController().getAgent(src);
+            myAgent.getContainerController().getAgent(dest);
+
+            // Push source/destination AID pair to the messageQueue to send
+            messageQueue.put(src, dest);
+
+            System.out.println("Message queue: " + messageQueue);
+
+            //System.out.println("Src: " + src + ", Dst: " + dest + " added to " +
+            //        "message queue");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(PathGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Find the shortest path for paths in the message queue
+     */
+    private void findShortestPath() {
+        for (Map.Entry<String, String> entry : messageQueue.entrySet()) {
+            try {
+                // Throws error if agent not found
+                myAgent.getContainerController().getAgent(entry.getKey());
+                myAgent.getContainerController().getAgent(entry.getValue());
+
+                // Messages to the agents needs to be in JSON format
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("action", "get-shortest-path");
+                jsonObject.put("source", entry.getKey());
+                jsonObject.put("destination", entry.getValue());
+
+                // Create REQUEST message
+                ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+                msg.addReceiver(new AID(entry.getKey(), AID.ISLOCALNAME));
+                // Convert JSON Object to string
+                msg.setContent(jsonObject.toJSONString());
+
+                myAgent.send(msg);
+            } catch (Exception e) {
+                e.printStackTrace();
+                //JOptionPane.showMessageDialog(PathGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        // Empty the message queue after sending it
+        messageQueue.clear();
     }
 
     public void showGui() {
