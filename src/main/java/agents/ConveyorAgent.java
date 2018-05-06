@@ -112,8 +112,10 @@ public class ConveyorAgent extends Agent {
                 System.out.println("Path does not exist");
                 return;
             }
-
-            System.out.println("shortest path is:" + shortestPath);
+            if(shortestPath.get(0).equals(shortestPath.get(shortestpath.size()-1))){
+                System.out.println("Item already at destination, but...");
+            }
+            System.out.println("the shortest path is:" + shortestPath);
 
             if (moveToNext) {
                 String target = shortestPath.get(1).toString();
