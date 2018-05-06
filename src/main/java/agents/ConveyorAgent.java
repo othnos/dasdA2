@@ -123,7 +123,7 @@ public class ConveyorAgent extends Agent {
                 addBehaviour(nextBehaviour);
             }
 
-            routeFinder.getShortestRoute().clear();
+            routeFinder.clearShortestPath();
         }
 
         @Override

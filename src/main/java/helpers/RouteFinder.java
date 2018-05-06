@@ -33,6 +33,11 @@ public class RouteFinder {
     public JSONArray getShortestRoute() {
         return shortestPath;
     }
+
+    public void clearShortestPath() {
+        shortestPath.clear();
+        shortestPath = null;
+    }
     /*
     private boolean running = false;
     private Agent agent;
