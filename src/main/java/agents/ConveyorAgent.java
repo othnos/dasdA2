@@ -16,6 +16,8 @@ import helpers.RouteFinder;
 import java.util.*;
 
 public class ConveyorAgent extends Agent {
+    private boolean DEBUG = false;
+
     /**
      * Possible statuses of the conveyor
      */
@@ -92,14 +94,17 @@ public class ConveyorAgent extends Agent {
         addBehaviour(new RejectProposalRouter(jsonParser, this));
     }
 
-    private class FindPath extends Behaviour {
+    /**
+     * Behaviour for deciding the path
+     */
+    private class DecideThePath extends Behaviour {
         JSONArray shortestPath;
         String destination;
         boolean moveToNext;
 
-        FindPath(JSONArray shortestPath_,
-                 String destination_,
-                 boolean moveToNext_) {
+        DecideThePath(JSONArray shortestPath_,
+                      String destination_,
+                      boolean moveToNext_) {
             shortestPath = shortestPath_;
             moveToNext = moveToNext_;
             destination = destination_;
@@ -115,7 +120,9 @@ public class ConveyorAgent extends Agent {
             if(shortestPath.get(0).equals(shortestPath.get(shortestpath.size()-1))){
                 System.out.println("Item already at destination, but...");
             }
-            System.out.println("the shortest path is:" + shortestPath);
+
+            //System.out.println("the shortest path is:" + shortestPath);
+            System.out.println("the shortest path is:" + routeFinder.getShortestPaths());
 
             if (moveToNext) {
                 String target = shortestPath.get(1).toString();
@@ -134,10 +141,18 @@ public class ConveyorAgent extends Agent {
         }
     }
 
+    /**
+     * Behaviour for moving the stuff to the next conveyor
+     */
     private class MoveToNext extends Behaviour {
         String destination;
         String target;
 
+        /**
+         * Constructor
+         * @param target_: Target conveyor
+         * @param destination_: Destination conveyor
+         */
         MoveToNext(String target_, String destination_) {
             target = target_;
             destination = destination_;
@@ -266,8 +281,10 @@ public class ConveyorAgent extends Agent {
 
             pfm = new PathFindingMessage(data);
 
-            System.out.println("Conveyor " + getLocalName() +
-                    " received data: " + data);
+            if (DEBUG) {
+                System.out.println("Conveyor " + getLocalName() +
+                        " received data: " + data);
+            }
 
             java.lang.reflect.Method method;
 
@@ -300,7 +317,7 @@ public class ConveyorAgent extends Agent {
                     new WakerBehaviour(myAgent, timeOut) {
                         protected void onWake() {
                             //decide target
-                            addBehaviour(new FindPath(shortestpath,
+                            addBehaviour(new DecideThePath(shortestpath,
                                     pfm.getDestination(),
                                     false)
                             );
@@ -324,7 +341,7 @@ public class ConveyorAgent extends Agent {
                     new WakerBehaviour(myAgent, timeOut) {
                         protected void onWake() {
                             //decide target
-                            addBehaviour(new FindPath(shortestpath,
+                            addBehaviour(new DecideThePath(shortestpath,
                                     pfm.getDestination(),
                                     true)
                             );
@@ -340,7 +357,9 @@ public class ConveyorAgent extends Agent {
          */
         void findShortestPath() {
             if (checkIfLoop()) {
-                System.out.println("Loop found with path " + pfm.getPath().toString());
+                if (DEBUG) {
+                    System.out.println("Loop found with path " + pfm.getPath().toString());
+                }
                 return;
             }
 

@@ -33,11 +33,17 @@ public class LayOutBuilderAgent extends Agent {
 
     private HashMap<String, Conveyor> layout = new HashMap<>();
 
+    private boolean DEBUG = false;
+
     /**
      * Path GUI
      */
     private PathGui pathGUI;
 
+    /**
+     * Conveyor "entity" class for storing temporary data
+     * from a layout
+     */
     private class Conveyor{
         private String nick_;
         private boolean hasWorkstation_;
@@ -74,29 +80,28 @@ public class LayOutBuilderAgent extends Agent {
         }
     }
 
+    /**
+     * Create agents to the jade platform
+     */
     protected void createAgents(){
-                                        //new Object[]{"cnv_1", false, neighbours}).start();
         for (String cnv: layout.keySet()) {
             // Creating new agent
             try {
-                getContainerController().createNewAgent(layout.get(cnv).getNick(), "agents.ConveyorAgent",
-                        layout.get(cnv).getCreateData()).start();
-
-                System.out.println(
-                        getContainerController().getAgent(cnv).getName()
-                );
-
+                getContainerController().createNewAgent(
+                        layout.get(cnv).getNick(),
+                        "agents.ConveyorAgent",
+                        layout.get(cnv).getCreateData()
+                ).start();
             } catch (StaleProxyException e) {
                 e.printStackTrace();
-            } catch (ControllerException e) {
-                e.printStackTrace();
             }
-
         }
-
-
     }
 
+    /**
+     * Get config data from the config.json file
+     * @return
+     */
     protected JSONObject getConfigData(){
         //get json config data
 
@@ -134,17 +139,13 @@ public class LayOutBuilderAgent extends Agent {
 
         JSONObject data = getConfigData();
 
-
-        //String path = "C:\\Skole\\Distributed Automation Systems design\\Assignments\\Assignment2\\JadeMaven-master\\JadeMaven-master\\testLayouts";
-        //File fileToRead = new File(path + "\\layout1.csv");Paths.get(filepath)
-
         String filepath = "./testLayouts/layout1.csv";
-
         File fileToRead = new File(filepath);
 
         BufferedReader b = new BufferedReader(new FileReader(fileToRead));
         String readLine = "";
         while ((readLine = b.readLine()) != null){
+            // Data is in csv format so we split with ; to get items
             String[] items = readLine.split(";");
 
             if(items.length > 2 || items.length < 1) {
@@ -152,35 +153,32 @@ public class LayOutBuilderAgent extends Agent {
                 continue;
             }
 
-            //skip the title row
+            // skip the title row
             if (items[0].trim().equals("Cnv")){
                 continue;
             }
-                layout.put(items[0],
-                        new Conveyor(
-                                items[0].trim(),
-                                Boolean.parseBoolean(items[1].trim()),
-                                Integer.parseInt(data.get("workTime").toString()),
-                                Integer.parseInt(data.get("throughputTime").toString()),
-                                Integer.parseInt(data.get("timeout").toString())
-                                )
-                );
 
-            for (String piece: items) {
-                //System.out.print(piece + " ");
+            layout.put(items[0],
+                    new Conveyor(
+                            items[0].trim(),
+                            Boolean.parseBoolean(items[1].trim()),
+                            Integer.parseInt(data.get("workTime").toString()),
+                            Integer.parseInt(data.get("throughputTime").toString()),
+                            Integer.parseInt(data.get("timeout").toString())
+                            )
+            );
+
+            if (DEBUG) {
+                for (String piece : items) {
+                    System.out.print(piece + " ");
+                }
+                System.out.println();
             }
-            //System.out.println();
         }
 
-
         // read neighbour information from other csv file
-        //path = "C:\\Skole\\Distributed Automation Systems design\\Assignments\\Assignment2\\JadeMaven-master\\JadeMaven-master\\testLayouts";
-        //fileToRead = new File(path + "\\layout1neighbors.csv");
-
         filepath = "./testLayouts/layout1neighbors.csv";
-
         fileToRead = new File(filepath);
-
 
         b = new BufferedReader(new FileReader(fileToRead));
         readLine = "";
@@ -209,7 +207,7 @@ public class LayOutBuilderAgent extends Agent {
             layout.get(items[0]).addNeighbour(items[1]);
         }
 
-        if (false) {
+        if (DEBUG) {
             for (String cnv : layout.keySet()) {
                 System.out.print(cnv + " has neighbours ");
                 for (String instance : layout.get(cnv).getNeighbours()) {
@@ -221,7 +219,9 @@ public class LayOutBuilderAgent extends Agent {
     }
 
     protected void setup() {
-        //System.out.println("Hello. My name is " + getLocalName());
+        if (DEBUG) {
+            System.out.println("Hello. My name is " + getLocalName());
+        }
 
         // Create and show the GUI
         pathGUI = new PathGui(this);
@@ -248,7 +248,9 @@ public class LayOutBuilderAgent extends Agent {
             }
         });
 
-        sendMsg();
+        if (DEBUG) {
+            sendMsg();
+        }
     }
 
     private void sendMsg() {

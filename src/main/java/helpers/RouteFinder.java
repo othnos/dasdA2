@@ -8,11 +8,14 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class RouteFinder {
     Agent myAgent;
 
     JSONArray shortestPath = null;
+
+    private HashSet<JSONArray> shortestPaths = new HashSet<>();
 
     public RouteFinder(Agent a) {
         myAgent = a;
@@ -22,11 +25,16 @@ public class RouteFinder {
         //System.out.println("Added route");
         if(shortestPath == null){
             shortestPath = path;
+            shortestPaths.clear();
+            shortestPaths.add(shortestPath);
             return;
         }
 
         if(path.size() < shortestPath.size()){
+            shortestPaths.clear();
             shortestPath = path;
+        } else if (path.size() == shortestPath.size()) {
+            shortestPaths.add(path);
         }
     }
 
@@ -35,8 +43,13 @@ public class RouteFinder {
     }
 
     public void clearShortestPath() {
+        shortestPaths.clear();
         shortestPath.clear();
         shortestPath = null;
+    }
+
+    public String getShortestPaths() {
+        return shortestPaths.toString();
     }
     /*
     private boolean running = false;
