@@ -10,6 +10,8 @@ import jade.lang.acl.MessageTemplate;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import helpers.ConveyorAgent.*;
+import helpers.RouteFinder;
 
 import java.util.*;
 
@@ -40,6 +42,16 @@ public class ConveyorAgent extends Agent {
     private JSONArray shortestpath;
     private JSONParser jsonParser = new JSONParser();
 
+    //
+    private int msgId = 1;
+
+    private int getMsgId() {
+        return msgId++;
+    }
+
+
+    RouteFinder routeFinder = new RouteFinder(this);
+
     protected void setup() {
         conveyorStatus = 0;
         neighbours = new HashSet<String>();
@@ -66,7 +78,7 @@ public class ConveyorAgent extends Agent {
             workTime = config_.get("workTime");
             thruputTime = config_.get("throughputTime");
             timeOut = config_.get("timeout");
-            
+
 
         } catch (Exception e) {
             System.out.print("Conveyor couldn't be created. Stack trace: ");
@@ -80,73 +92,78 @@ public class ConveyorAgent extends Agent {
         addBehaviour(new RejectProposalRouter(jsonParser, this));
     }
 
-    //behaviour to play with the workpieces
-    private class movingStuff extends Behaviour{
-        private AID target;
-        private JSONArray stripdRoute;
+    private class FindPath extends Behaviour {
+        JSONArray shortestPath;
+        String destination;
+        boolean moveToNext;
 
-        PathFindingMessage pfm;
-
-        private movingStuff(PathFindingMessage pfm_){
-            pfm = pfm_;
+        FindPath(JSONArray shortestPath_,
+                 String destination_,
+                 boolean moveToNext_) {
+            shortestPath = shortestPath_;
+            moveToNext = moveToNext_;
+            destination = destination_;
         }
 
-        //ticker behaviour for the thruput time simulation
-        Behaviour thruPut = new WakerBehaviour(myAgent, thruputTime){
-            protected void onWake(){
-                ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
-                req.addReceiver(target);
-
-                try {
-                    pfm.setSource(target.getLocalName());
-                    pfm.setAction("get-shortest-path");
-                    pfm.getPath().clear();
-                    req.setContent(pfm.getAsJSONObject().toJSONString());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                myAgent.send(req);
-                System.out.println("Agent " + getLocalName() + " moved the pallet to the " +
-                        "next conveyor with route " + stripdRoute);
-                shortestpath.clear();
-                shortestpath = null;
-                stripdRoute.clear();
-                stripdRoute = null;
-            }
-        };
-
-        Behaviour working = new WakerBehaviour(myAgent, workTime){
-            protected void onWake(){
-
-                ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
-                req.addReceiver(target);
-                try {
-                    req.setContent(stripdRoute.toString());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                myAgent.send(req);
-            }
-        };
-
-        //startup sets the target agent from the jsonobject targets and strips it from the path which gets
-        //assigned on the next conveyor again. Leaves(?) soruce and destination.
-        public void onStart() {
-        }
-
+        @Override
         public void action() {
-
-            if(shortestpath == null){
+            if (shortestPath == null ||
+                    shortestPath.isEmpty()) {
                 System.out.println("Path does not exist");
                 return;
             }
-            target = new AID(shortestpath.get(1).toString(), AID.ISLOCALNAME);
-            stripdRoute = shortestpath;
-            System.out.println("shortest path is:" + shortestpath);
-            addBehaviour(thruPut);
 
+            System.out.println("shortest path is:" + shortestPath);
+
+            if (moveToNext) {
+                String target = shortestPath.get(1).toString();
+                System.out.println("Started to move from conveyor " + getLocalName() +
+                    " to conveyor " + target);
+                Behaviour nextBehaviour = new MoveToNext(target, destination);
+                addBehaviour(nextBehaviour);
+            }
+
+            routeFinder.getShortestRoute().clear();
         }
+
+        @Override
+        public boolean done() {
+            return true;
+        }
+    }
+
+    private class MoveToNext extends Behaviour {
+        String destination;
+        String target;
+
+        MoveToNext(String target_, String destination_) {
+            target = target_;
+            destination = destination_;
+        }
+
+        @Override
+        public void action() {
+            ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
+            req.addReceiver(new AID(target, AID.ISLOCALNAME));
+            PathFindingMessage pfm;
+
+            try {
+                pfm = new PathFindingMessage(
+                        target,
+                        destination,
+                        "move"
+                );
+                req.setContent(pfm.getAsJSONObject().toJSONString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            myAgent.send(req);
+            System.out.println("Agent " + getLocalName() + " moved the pallet to the " +
+                    "conveyor " + target + " with destination " + destination);
+        }
+
+        @Override
         public boolean done() {
             return true;
         }
@@ -156,7 +173,7 @@ public class ConveyorAgent extends Agent {
     private class sendPathFindingMessage extends Behaviour {
         private PathFindingMessage pfm;
 
-        private sendPathFindingMessage(PathFindingMessage pfm_){
+        private sendPathFindingMessage(PathFindingMessage pfm_) {
             pfm = pfm_;
         }
 
@@ -181,7 +198,7 @@ public class ConveyorAgent extends Agent {
 
             // Since destination wasn't found, populate the
             // path finding to all of the neighbours
-            pfm.setAction("find-shortest-path");
+            pfm.setAction("findShortestPath");
             for (String neighbour : neighbours) {
                 ACLMessage req = new ACLMessage(ACLMessage.REQUEST);
                 //adds a neighbour as receiver of the message
@@ -210,9 +227,21 @@ public class ConveyorAgent extends Agent {
         PathFindingMessage pfm = null;
 
         /**
+         * Whitelist for methods which can be called
+         * by received messages
+         */
+        HashSet<String> methodWhitelist = new HashSet<String>(Arrays.asList(
+                "getShortestPath",
+                "findShortestPath",
+                "receiveAccept",
+                "move"
+        ));
+
+        /**
          * Constructor
-         * @param jsonParser
-         * @param agent
+         *
+         * @param jsonParser: JSON parser
+         * @param agent:      Agent
          */
         private RequestRouter(JSONParser jsonParser, Agent agent) {
             // Access only ACLMessage.REQUEST from message queue
@@ -224,70 +253,115 @@ public class ConveyorAgent extends Agent {
         }
 
         /**
+         * Chooses the correct action
          *
-         * @param data
+         * @param data: Data as JSON object
          * @throws Exception
          */
         public void route(JSONObject data) throws Exception {
+            // Get the action from the data
             String action = getAction(data);
 
-            pfm = null;
+            pfm = new PathFindingMessage(data);
 
-            System.out.println("Conveyor " + getLocalName() + " received data: " + data);
+            System.out.println("Conveyor " + getLocalName() +
+                    " received data: " + data);
 
-            // Select the wanted action
-            switch (action) {
-                // Replies the shortest path to the sender
-                case "get-shortest-path":
-                    pfm = new PathFindingMessage(data);
+            java.lang.reflect.Method method;
 
-                    // If conveyor is not ready or the conveyor
-                    // is the destination we won't start the path
-                    // finding
-                    if (!isConveyorReady() ||
-                            check_ifDest()) {
-                        return;
-                    }
+            try {
+                // Throw an exception if action couldn't be found
+                // from the whitelist
+                if (!methodWhitelist.contains(action)) {
+                    throw new Exception("Called action " + action +
+                            " not whitelisted");
+                }
 
-                    // Need to "finalize" pfm so that we can pass it
-                    // to the WakerBehaviour
-                    PathFindingMessage finalPfm = pfm;
-                    addBehaviour(
-                        new WakerBehaviour(myAgent, timeOut){
-                            protected void onWake(){
-                                //decide target
-                                addBehaviour(new movingStuff(finalPfm));
-                            }
-                    });
-                case "find-shortest-path":
-                    if (pfm == null) {
-                        pfm = new PathFindingMessage(data);
-                    }
-
-                    if (checkIfLoop()) {
-                        System.out.println("Loop found with path " + pfm.getPath().toString());
-                         return;
-                    }
-
-                    if (!hasNeighbours()) {
-                        return;
-                    }
-
-                    // Populates message to neighbours or if destination found
-                    // send the route to the source conveyor
-                    addBehaviour(new sendPathFindingMessage(pfm));
-                    break;
-                // When route is found, add it to routeFinder
-                case "receiveAccept":
-                    pfm = new PathFindingMessage(data);
-
-                    routeFinder.addRoute(pfm);
-                    break;
-                default:
-                    throw new Exception("Action not found.");
+                // Get the wanted method
+                method = this.getClass().getDeclaredMethod(action
+                        // , JSONObject.class
+                );
+                // Call the method
+                method.invoke(this
+                        // , data
+                );
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
 
+        /**
+         * @throws Exception
+         */
+        void getShortestPath() throws Exception {
+            addBehaviour(
+                    new WakerBehaviour(myAgent, timeOut) {
+                        protected void onWake() {
+                            //decide target
+                            addBehaviour(new FindPath(shortestpath,
+                                    pfm.getDestination(),
+                                    false)
+                            );
+                        }
+                    });
+
+            // Populate neighbours with find shortest path
+            findShortestPath();
+        }
+
+        void move() throws Exception {
+            // If conveyor is not ready or the conveyor
+            // is the destination we won't start the path
+            // finding
+            if (!isConveyorReady() ||
+                    check_ifDest()) {
+                return;
+            }
+
+            addBehaviour(
+                    new WakerBehaviour(myAgent, timeOut) {
+                        protected void onWake() {
+                            //decide target
+                            addBehaviour(new FindPath(shortestpath,
+                                    pfm.getDestination(),
+                                    true)
+                            );
+                        }
+                    });
+
+            // Populate neighbours with find shortest path
+            findShortestPath();
+        }
+
+        /**
+         *
+         */
+        void findShortestPath() {
+            if (checkIfLoop()) {
+                System.out.println("Loop found with path " + pfm.getPath().toString());
+                return;
+            }
+
+            if (!hasNeighbours()) {
+                return;
+            }
+
+            // Populates message to neighbours or if destination found
+            // send the route to the source conveyor
+            addBehaviour(new sendPathFindingMessage(pfm));
+        }
+
+        /**
+         *
+         */
+        void receiveAccept() {
+            routeFinder.addRoute((JSONArray) pfm.getPath());
+            shortestpath = routeFinder.getShortestRoute();
+        }
+
+        /**
+         * @return
+         */
         boolean isConveyorReady() {
             if (status == Status.Ready) {
                 return true;
@@ -306,6 +380,9 @@ public class ConveyorAgent extends Agent {
             return false;
         }
 
+        /**
+         * @return
+         */
         boolean check_ifDest() {
             if (pfm.getSource().equals(pfm.getDestination())) {
                 System.out.println("Arrived to destination.");
@@ -317,6 +394,7 @@ public class ConveyorAgent extends Agent {
 
         /**
          * Returns if the path finding message has gone through a loop
+         *
          * @return
          */
         boolean checkIfLoop() {
@@ -324,13 +402,13 @@ public class ConveyorAgent extends Agent {
 
             HashSet<String> foundConveyors = new HashSet<>();
 
-            for(Object instance: pfm.getPath()){
-                if(
+            for (Object instance : pfm.getPath()) {
+                if (
                     // If source conveyor is found from the path
                     // we know it must be a loop
                     (
-                    sourceEqualsThisAgent &&
-                    instance.toString().equals(pfm.getSource())
+                        sourceEqualsThisAgent &&
+                        instance.toString().equals(pfm.getSource())
                     ) ||
                     // If same conveyor already exists in foundConveyors
                     // it must be a loop
@@ -345,6 +423,9 @@ public class ConveyorAgent extends Agent {
             return false;
         }
 
+        /**
+         * @return
+         */
         boolean hasNeighbours() {
             if (!neighbours.isEmpty()) {
                 return true;
@@ -359,63 +440,6 @@ public class ConveyorAgent extends Agent {
             myAgent.send(req);
 
             return false;
-        }
-    }
-
-    /**
-     * Router for ACLMessage.REJECT_PROPOSAL messages
-     */
-    class RejectProposalRouter extends MessageRouter {
-        /**
-         * Constructor
-         */
-        private RejectProposalRouter(JSONParser jsonParser, Agent agent) {
-            // Access only ACLMessage.REQUEST from message queue
-            super(
-                    MessageTemplate.MatchPerformative(ACLMessage.REJECT_PROPOSAL),
-                    jsonParser,
-                    agent
-            );
-        }
-
-        /**
-         *
-         * @param data
-         * @throws Exception
-         */
-        public void route(JSONObject data) throws Exception {
-            try {
-                String action = getAction(data);
-
-                switch (action) {
-                    default:
-                        // Just ignore the found message
-                }
-            } catch (Exception e) {
-                // Catch the "action not found" exception
-                // and do not print any debugging
-            }
-        }
-    }
-
-    RouteFinder routeFinder = new RouteFinder(this);
-
-    class RouteFinder {
-        Agent myAgent;
-
-        RouteFinder(Agent a) {
-            myAgent = a;
-        }
-
-        void addRoute(PathFindingMessage pfm) {
-            //System.out.println("Added route");
-            if(shortestpath == null){
-                shortestpath = (JSONArray) pfm.getPath();
-            }
-
-            if(pfm.getPath().size() < shortestpath.size()){
-                shortestpath = (JSONArray) pfm.getPath();
-            }
         }
     }
 }

@@ -1,6 +1,7 @@
 package agents;
 
 //import com.sun.org.apache.xml.internal.resolver.Catalog;
+import helpers.PathFindingMessage;
 import helpers.PathGui;
 import jade.core.AID;
 import jade.core.Agent;
@@ -247,23 +248,25 @@ public class LayOutBuilderAgent extends Agent {
             }
         });
 
-        //sendMsg();
+        sendMsg();
     }
 
     private void sendMsg() {
-        // Messages to the agents needs to be in JSON format
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("action", "get-shortest-path");
-        jsonObject.put("source", "cnv_1");
-        jsonObject.put("destination", "cnv_10");
+        try {
+            PathFindingMessage pfm =
+                    new PathFindingMessage("cnv_1", "cnv_3",
+                            "getShortestPath");
 
-        // Create REQUEST message
-        ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-        msg.addReceiver(new AID("cnv_1", AID.ISLOCALNAME));
-        // Convert JSON Object to string
-        msg.setContent(jsonObject.toJSONString());
+            // Create REQUEST message
+            ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+            msg.addReceiver(new AID("cnv_1", AID.ISLOCALNAME));
+            // Convert JSON Object to string
+            msg.setContent(pfm.getAsJSONObject().toJSONString());
 
-        this.send(msg);
+            this.send(msg);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
 

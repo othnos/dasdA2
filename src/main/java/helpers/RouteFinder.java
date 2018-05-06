@@ -10,6 +10,29 @@ import org.json.simple.JSONObject;
 import java.util.HashMap;
 
 public class RouteFinder {
+    Agent myAgent;
+
+    JSONArray shortestPath = null;
+
+    public RouteFinder(Agent a) {
+        myAgent = a;
+    }
+
+    public void addRoute(JSONArray path) {
+        //System.out.println("Added route");
+        if(shortestPath == null){
+            shortestPath = path;
+            return;
+        }
+
+        if(path.size() < shortestPath.size()){
+            shortestPath = path;
+        }
+    }
+
+    public JSONArray getShortestRoute() {
+        return shortestPath;
+    }
     /*
     private boolean running = false;
     private Agent agent;

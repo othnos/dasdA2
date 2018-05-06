@@ -44,8 +44,12 @@ public class PathGui extends JFrame {
         p.add(addButton);
 
         JButton sendButton = new JButton("Search shortest path");
-        sendButton.addActionListener(ev -> findShortestPath());
+        sendButton.addActionListener(ev -> findShortestPath(false));
         p.add(sendButton);
+
+        JButton moveButton = new JButton("Move");
+        moveButton.addActionListener(ev -> findShortestPath(true));
+        p.add(moveButton);
 
         getContentPane().add(p, BorderLayout.SOUTH);
 
@@ -88,15 +92,22 @@ public class PathGui extends JFrame {
     /**
      * Find the shortest path for paths in the message queue
      */
-    private void findShortestPath() {
+    private void findShortestPath(boolean move) {
         for (Map.Entry<String, String> entry : messageQueue.entrySet()) {
             try {
                 // Throws error if agent not found
                 myAgent.getContainerController().getAgent(entry.getKey());
                 myAgent.getContainerController().getAgent(entry.getValue());
 
+                String action;
+                if (move) {
+                    action = "move";
+                } else {
+                    action = "getShortestPath";
+                }
+
                 PathFindingMessage pfm = new PathFindingMessage(entry.getKey(),
-                        entry.getValue(), "get-shortest-path");
+                        entry.getValue(), action);
 
                 ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
                 msg.addReceiver(new AID(entry.getKey(), AID.ISLOCALNAME));
